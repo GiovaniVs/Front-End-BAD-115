@@ -1,0 +1,90 @@
+<section class="admin-shell" [class.sidebar-collapsed]="isCollapsed">
+  <aside class="admin-sidebar">
+    <a class="sidebar-brand" routerLink="/admin/encuestas" aria-label="SurveyCore">
+      <span class="brand-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M5 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4v-4H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
+          <path d="M8 8h8M8 12h5" />
+        </svg>
+      </span>
+      <span class="brand-text">SurveyCore</span>
+    </a>
+
+    <nav class="sidebar-nav" aria-label="Navegacion principal">
+      <p class="sidebar-section-title">Navegacion</p>
+
+      <ul class="sidebar-menu">
+        @for (item of menuItems; track item.label) {
+          <li>
+            <a
+              class="sidebar-link"
+              [routerLink]="item.route"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              [attr.aria-label]="item.label"
+              [title]="isCollapsed ? item.label : ''"
+            >
+              <span class="sidebar-icon" aria-hidden="true">
+                @switch (item.icon) {
+                  @case ('dashboard') {
+                    <svg viewBox="0 0 24 24" focusable="false"><path d="M4 13h7V4H4v9Zm9 7h7V4h-7v16ZM4 20h7v-5H4v5Z" /></svg>
+                  }
+                  @case ('surveys') {
+                    <svg viewBox="0 0 24 24" focusable="false"><path d="M7 4h10a2 2 0 0 1 2 2v16l-3-2-3 2-3-2-3 2V6a2 2 0 0 1 2-2Z" /><path d="M9 8h6M9 12h6M9 16h4" /></svg>
+                  }
+                  @case ('users') {
+                    <svg viewBox="0 0 24 24" focusable="false"><path d="M16 11a4 4 0 1 0-3.2-6.4M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8 2c-2.2 0-4 1.2-4 2.7V19h8v-2.3c0-1.5-1.8-2.7-4-2.7ZM8 14c-2.8 0-5 1.5-5 3.4V20h10v-2.6C13 15.5 10.8 14 8 14Z" /></svg>
+                  }
+                  @case ('roles') {
+                    <svg viewBox="0 0 24 24" focusable="false"><path d="M12 3 4 6v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V6l-8-3Z" /><path d="m9 12 2 2 4-5" /></svg>
+                  }
+                  @case ('respondents') {
+                    <svg viewBox="0 0 24 24" focusable="false"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0" /></svg>
+                  }
+                  @case ('analytics') {
+                    <svg viewBox="0 0 24 24" focusable="false"><path d="M5 19V9m7 10V5m7 14v-7" /><path d="M3 19h18" /></svg>
+                  }
+                  @default {
+                    <svg viewBox="0 0 24 24" focusable="false"><path d="M6 3h9l3 3v18H6V3Z" /><path d="M9 12h6M9 16h6M9 20h4" /></svg>
+                  }
+                }
+              </span>
+              <span class="sidebar-label">{{ item.label }}</span>
+            </a>
+          </li>
+        }
+      </ul>
+    </nav>
+  </aside>
+
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <div class="topbar-left">
+        <button class="sidebar-toggle" type="button" (click)="toggleSidebar()" aria-label="Contraer o expandir menu">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <span class="topbar-title">Panel de Administracion</span>
+      </div>
+
+      <div class="topbar-user">
+        <div class="user-copy">
+          <strong>Administrador</strong>
+          <span>Administrador</span>
+        </div>
+        <button class="logout-button" type="button" (click)="logout()">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M10 17 15 12l-5-5M15 12H3" />
+            <path d="M14 4h5a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-5" />
+          </svg>
+          <span>Salir</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="admin-content">
+      <router-outlet />
+    </main>
+  </div>
+</section>

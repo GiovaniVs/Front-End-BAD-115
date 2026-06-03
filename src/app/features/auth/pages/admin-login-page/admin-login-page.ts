@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../../../core/services/auth.service';
 
@@ -13,6 +13,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 export class AdminLoginPageComponent{
     private readonly formBuilder = inject(FormBuilder);
     private readonly authService = inject(AuthService);
+    private readonly router = inject(Router);
 
     readonly loginForm = this.formBuilder.nonNullable.group({
         email: ['', [Validators.required, Validators.email]], 
@@ -29,6 +30,7 @@ export class AdminLoginPageComponent{
             next:(response)=>{
                 localStorage.setItem('auth_token', response.token); 
                 localStorage.setItem('user_role', response.role);
+                this.router.navigateByUrl('/admin/encuestas');
             },
             error: () => {
               this.loginForm.controls.password.setErrors({ invalidCredentials: true });

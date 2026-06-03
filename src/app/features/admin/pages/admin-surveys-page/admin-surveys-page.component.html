@@ -1,0 +1,37 @@
+<section class="surveys-page">
+  <header class="survey-header">
+    <div>
+      <p class="survey-kicker">Administracion</p>
+      <h1>Encuestas</h1>
+    </div>
+
+    <button class="new-survey-button" type="button">
+      <span aria-hidden="true">+</span>
+      Nueva Encuesta
+    </button>
+  </header>
+
+  <article class="survey-table-card">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Titulo</th>
+            <th>Estado</th>
+            <th>Preguntas</th>
+            <th>Respuestas</th>
+            <th>Fecha</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (surveys.length === 0) {
+            <tr>
+              <td class="empty-state" colspan="6">No hay encuestas</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </article>
+</section>
