@@ -1,0 +1,40 @@
+<section class="auth-page admin-theme">
+  <div class="bg-shape shape-top" aria-hidden="true"></div>
+  <div class="bg-shape shape-bottom" aria-hidden="true"></div>
+
+  <article class="auth-card">
+    <p class="eyebrow">Panel de administracion</p>
+    <h1>Acceso para administradores</h1>
+    <p class="subtitle">Crea encuestas, organiza preguntas y revisa resultados en tiempo real.</p>
+
+    <form class="auth-form" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <label for="admin-email">Correo</label>
+      <input id="admin-email" formControlName="email" type="email" placeholder="admin@empresa.com" />
+      @if (loginForm.controls.email.touched && loginForm.controls.email.invalid) {
+      <small class="error-text">Ingresa un correo valido.</small>
+      }
+
+      <label for="admin-password">Contrasena</label>
+      <input id="admin-password" formControlName="password" type="password" placeholder="Ingresa tu contrasena" />
+      @if (loginForm.controls.password.touched && loginForm.controls.password.errors?.['required']) {
+      <small class="error-text">La contrasena es obligatoria.</small>
+      }
+      @if (loginForm.controls.password.touched && loginForm.controls.password.errors?.['minlength']) {
+      <small class="error-text">Minimo 6 caracteres.</small>
+      }
+      @if (loginForm.controls.password.errors?.['invalidCredentials']) {
+      <small class="error-text">Credenciales invalidas.</small>
+      }
+
+      <button type="submit">Entrar al panel</button>
+    </form>
+
+    <p class="switch-text">
+      Eres encuestado?
+      <a routerLink="/auth/encuestado-login">Ingresar para responder encuesta</a>
+      
+    </p>
+
+     
+  </article>
+</section>
