@@ -28,17 +28,8 @@
   opacity: 0.55;
 }
 
-.shape-top {
-  top: -5rem;
-  right: -4rem;
-  background: #60a5fa;
-}
 
-.shape-bottom {
-  left: -6rem;
-  bottom: -6rem;
-  background: #818cf8;
-}
+
 
 .auth-card {
   width: min(100%, 29rem);
