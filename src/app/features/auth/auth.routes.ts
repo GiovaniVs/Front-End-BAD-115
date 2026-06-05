@@ -13,5 +13,9 @@ export const AUTH_ROUTES: Routes = [
         (m) => m.RespondentLoginPageComponent
       )
   },
+  {
+    path: 'registro',
+    loadComponent: () => import('./pages/register-page/register-page').then((m) => m.RegisterPageComponent)
+  },
   { path: '', pathMatch: 'full', redirectTo: 'admin-login' }
 ];
