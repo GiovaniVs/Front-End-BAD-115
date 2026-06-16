@@ -4,12 +4,67 @@
 
   <article class="register-card">
     <div class="intro">
-      <p class="eyebrow">Crear administrador</p>
-      <h1>Registro de administrador</h1>
-      <p class="subtitle">Crea una cuenta con permisos para administrar encuestas.</p>
+      <p class="eyebrow">Crear cuenta</p>
+      <h1>Registrate segun tu rol</h1>
+      <p class="subtitle">Elige si administraras encuestas o si participaras respondiendolas.</p>
     </div>
 
     <form class="register-form" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+      <fieldset class="role-options">
+        <legend>Tipo de usuario</legend>
+
+        <label class="role-card">
+          <input type="radio" formControlName="accountType" value="ENCUESTADO" (change)="onAccountTypeChange()" />
+          <span>
+            <strong>Encuestado</strong>
+            <small>Responder encuestas asignadas.</small>
+          </span>
+        </label>
+
+        <label class="role-card">
+          <input type="radio" formControlName="accountType" value="ADMIN" (change)="onAccountTypeChange()" />
+          <span>
+            <strong>Administrador</strong>
+            <small>Crear encuestas y revisar resultados.</small>
+          </span>
+        </label>
+      </fieldset>
+
+      @if (isRespondentSelected()) {
+      <label for="register-nombres">Nombres</label>
+      <input id="register-nombres" formControlName="nombres" type="text" placeholder="Giovanni" />
+      @if (registerForm.controls.nombres.touched && registerForm.controls.nombres.invalid) {
+      <small class="error-text">Ingresa los nombres del encuestado.</small>
+      }
+
+      <label for="register-apellidos">Apellidos</label>
+      <input id="register-apellidos" formControlName="apellidos" type="text" placeholder="Vasquez" />
+      @if (registerForm.controls.apellidos.touched && registerForm.controls.apellidos.invalid) {
+      <small class="error-text">Ingresa los apellidos del encuestado.</small>
+      }
+
+      <label for="register-respondent-email">Correo</label>
+      <input
+        id="register-respondent-email"
+        formControlName="correoElectronico"
+        type="email"
+        placeholder="vs21025@ues.edu.sv"
+      />
+      @if (registerForm.controls.correoElectronico.touched && registerForm.controls.correoElectronico.errors?.['email']) {
+      <small class="error-text">Ingresa un correo valido.</small>
+      }
+      @if (registerForm.controls.correoElectronico.errors?.['registerError']) {
+      <small class="error-text">No se pudo registrar el encuestado. Revisa los datos.</small>
+      }
+
+      <label for="register-birthdate">Fecha de nacimiento</label>
+      <input id="register-birthdate" formControlName="fechaNacimiento" type="date" />
+      @if (registerForm.controls.fechaNacimiento.touched && registerForm.controls.fechaNacimiento.invalid) {
+      <small class="error-text">Selecciona la fecha de nacimiento.</small>
+      }
+      }
+
+      @if (isAdminSelected()) {
       <label for="register-username">Usuario</label>
       <input id="register-username" formControlName="username" type="text" placeholder="admin2" />
       @if (registerForm.controls.username.touched && registerForm.controls.username.invalid) {
@@ -40,6 +95,7 @@
       />
       @if (registerForm.controls.confirmPassword.touched && registerForm.errors?.['passwordsMismatch']) {
       <small class="error-text">Las contrasenas no coinciden.</small>
+      }
       }
 
       <button type="submit">Crear cuenta</button>

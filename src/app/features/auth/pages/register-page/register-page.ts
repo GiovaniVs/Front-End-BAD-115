@@ -4,6 +4,8 @@ import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../../../core/services/auth.service';
 
+type AccountType = 'ENCUESTADO' | 'ADMIN';
+
 @Component({
   selector: 'app-register-page',
   imports: [ReactiveFormsModule, RouterLink],
@@ -17,6 +19,11 @@ export class RegisterPageComponent {
 
   readonly registerForm = this.formBuilder.nonNullable.group(
     {
+      accountType: this.formBuilder.nonNullable.control<AccountType>('ENCUESTADO', [Validators.required]),
+      nombres: ['', [Validators.required, Validators.minLength(2)]],
+      apellidos: ['', [Validators.required, Validators.minLength(2)]],
+      correoElectronico: ['', [Validators.required, Validators.email]],
+      fechaNacimiento: ['', [Validators.required]],
       username: ['', [Validators.required, Validators.minLength(3)]],
       correo: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
@@ -26,12 +33,28 @@ export class RegisterPageComponent {
   );
 
   onSubmit(): void {
+    this.applyAccountValidators();
+
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
       return;
     }
 
-    const { username, correo, password } = this.registerForm.getRawValue();
+    const { accountType, nombres, apellidos, correoElectronico, fechaNacimiento, username, correo, password } =
+      this.registerForm.getRawValue();
+
+    if (accountType === 'ENCUESTADO') {
+      this.authService.registerRespondent({ nombres, apellidos, correoElectronico, fechaNacimiento }).subscribe({
+        next: () => {
+          this.router.navigateByUrl('/auth/encuestado-login');
+        },
+        error: () => {
+          this.registerForm.controls.correoElectronico.setErrors({ registerError: true });
+        }
+      });
+      return;
+    }
+
     this.authService.register({
       username,
       password,
@@ -50,7 +73,58 @@ export class RegisterPageComponent {
     });
   }
 
+  isRespondentSelected(): boolean {
+    return this.registerForm.controls.accountType.value === 'ENCUESTADO';
+  }
+
+  isAdminSelected(): boolean {
+    return this.registerForm.controls.accountType.value === 'ADMIN';
+  }
+
+  onAccountTypeChange(): void {
+    this.applyAccountValidators();
+  }
+
+  private applyAccountValidators(): void {
+    const respondentValidators = [Validators.required, Validators.minLength(2)];
+    const emailValidators = [Validators.required, Validators.email];
+    const requiredValidators = [Validators.required];
+
+    if (this.isRespondentSelected()) {
+      this.registerForm.controls.nombres.setValidators(respondentValidators);
+      this.registerForm.controls.apellidos.setValidators(respondentValidators);
+      this.registerForm.controls.correoElectronico.setValidators(emailValidators);
+      this.registerForm.controls.fechaNacimiento.setValidators(requiredValidators);
+      this.registerForm.controls.username.clearValidators();
+      this.registerForm.controls.correo.clearValidators();
+      this.registerForm.controls.password.clearValidators();
+      this.registerForm.controls.confirmPassword.clearValidators();
+    } else {
+      this.registerForm.controls.nombres.clearValidators();
+      this.registerForm.controls.apellidos.clearValidators();
+      this.registerForm.controls.correoElectronico.clearValidators();
+      this.registerForm.controls.fechaNacimiento.clearValidators();
+      this.registerForm.controls.username.setValidators([Validators.required, Validators.minLength(3)]);
+      this.registerForm.controls.correo.setValidators(emailValidators);
+      this.registerForm.controls.password.setValidators([Validators.required, Validators.minLength(6)]);
+      this.registerForm.controls.confirmPassword.setValidators(requiredValidators);
+    }
+
+    this.registerForm.controls.nombres.updateValueAndValidity({ emitEvent: false });
+    this.registerForm.controls.apellidos.updateValueAndValidity({ emitEvent: false });
+    this.registerForm.controls.correoElectronico.updateValueAndValidity({ emitEvent: false });
+    this.registerForm.controls.fechaNacimiento.updateValueAndValidity({ emitEvent: false });
+    this.registerForm.controls.username.updateValueAndValidity({ emitEvent: false });
+    this.registerForm.controls.correo.updateValueAndValidity({ emitEvent: false });
+    this.registerForm.controls.password.updateValueAndValidity({ emitEvent: false });
+    this.registerForm.controls.confirmPassword.updateValueAndValidity({ emitEvent: false });
+  }
+
   private passwordsMatch(control: AbstractControl): ValidationErrors | null {
+    if (control.get('accountType')?.value === 'ENCUESTADO') {
+      return null;
+    }
+
     const password = control.get('password')?.value;
     const confirmPassword = control.get('confirmPassword')?.value;
 

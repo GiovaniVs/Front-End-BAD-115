@@ -27,6 +27,15 @@ export class AuthService {
     return this.http.post<unknown>(this.usersUrl, payload);
   }
 
+  registerRespondent(payload: {
+    nombres: string;
+    apellidos: string;
+    correoElectronico: string;
+    fechaNacimiento: string;
+  }): Observable<unknown> {
+    return this.http.post<unknown>(`${this.respondentsUrl}/registro`, payload);
+  }
+
   requestRespondentToken(correo: string): Observable<string> {
     return this.http.post(`${this.respondentsUrl}/login-encuestado`, null, {
       params: { correo },
