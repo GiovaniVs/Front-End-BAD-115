@@ -5,11 +5,44 @@
       <h1>Encuestas</h1>
     </div>
 
-    <button class="new-survey-button" type="button">
+    <button class="new-survey-button" type="button" (click)="toggleCreateForm()">
       <span aria-hidden="true">+</span>
-      Nueva Encuesta
+      {{ showCreateForm ? 'Cancelar' : 'Nueva Encuesta' }}
     </button>
   </header>
+
+  @if (showCreateForm) {
+    <article class="survey-form-card">
+      <h2>Crear encuesta</h2>
+
+      <form class="survey-form" [formGroup]="surveyForm" (ngSubmit)="createSurvey()">
+        <label for="survey-title">Titulo</label>
+        <input id="survey-title" formControlName="titulo" type="text" placeholder="Ej. Satisfaccion del cliente" />
+        @if (surveyForm.controls.titulo.touched && surveyForm.controls.titulo.invalid) {
+          <small class="error-text">Ingresa un titulo de al menos 3 caracteres.</small>
+        }
+
+        <label for="survey-objective">Objetivo</label>
+        <input id="survey-objective" formControlName="objetivo" type="text" placeholder="Objetivo de la encuesta" />
+
+        <label for="survey-instructions">Instrucciones</label>
+        <textarea
+          id="survey-instructions"
+          formControlName="instrucciones"
+          rows="4"
+          placeholder="Indicaciones para quienes responderan"
+        ></textarea>
+
+        @if (saveError) {
+          <small class="error-text">{{ saveError }}</small>
+        }
+
+        <button class="save-survey-button" type="submit" [disabled]="isSaving">
+          {{ isSaving ? 'Guardando...' : 'Continuar a preguntas' }}
+        </button>
+      </form>
+    </article>
+  }
 
   <article class="survey-table-card">
     <div class="table-scroll">
@@ -30,8 +63,160 @@
               <td class="empty-state" colspan="6">No hay encuestas</td>
             </tr>
           }
+          @for (survey of surveys; track survey.idEncuesta || survey.id_encuesta || survey.titulo) {
+            <tr>
+              <td>{{ survey.titulo }}</td>
+              <td>{{ survey.estado || 'A' }}</td>
+              <td>{{ survey.questions.length }}</td>
+              <td>0</td>
+              <td>{{ survey.fechaCreacion || survey.fecha_creacion || '-' }}</td>
+              <td>
+                <button class="table-action-button" type="button" (click)="selectSurveyForQuestions(survey)">
+                  Preguntas
+                </button>
+              </td>
+            </tr>
+          }
         </tbody>
       </table>
     </div>
   </article>
+
+  @if (selectedSurvey; as survey) {
+    <article class="questions-panel">
+      <div class="questions-header">
+        <div>
+          <p class="survey-kicker">Constructor de preguntas</p>
+          <h2>{{ survey.titulo }}</h2>
+        </div>
+        <span class="question-count">{{ survey.questions.length }} preguntas</span>
+      </div>
+
+      <form class="question-form google-form-card" [formGroup]="questionForm" (ngSubmit)="addQuestion()">
+        <div class="question-top-row">
+          <div class="question-title-field">
+            <input
+              id="question-text"
+              formControlName="enunciado"
+              type="text"
+              placeholder="Pregunta sin titulo"
+              aria-label="Pregunta"
+            />
+            @if (questionForm.controls.enunciado.touched && questionForm.controls.enunciado.invalid) {
+              <small class="error-text">Ingresa una pregunta de al menos 5 caracteres.</small>
+            }
+          </div>
+
+          <select
+            class="question-type-select"
+            id="question-type"
+            formControlName="tipo"
+            aria-label="Tipo de pregunta"
+            (change)="onQuestionTypeChange()"
+          >
+            <option value="Cerrada">Opcion multiple</option>
+            <option value="Verdadero/Falso">Verdadero/Falso</option>
+            <option value="Ranking">Ranking</option>
+          </select>
+        </div>
+
+        @if (shouldShowOptions()) {
+          <div class="options-editor">
+            <label for="question-options">{{ questionForm.controls.tipo.value === 'Ranking' ? 'Elementos para ordenar' : 'Opciones de respuesta' }}</label>
+            <textarea
+              id="question-options"
+              formControlName="opciones"
+              rows="5"
+              placeholder="Elemento 1&#10;Elemento 2&#10;Elemento 3"
+            ></textarea>
+            <p class="helper-text">Escribe una opcion por linea.</p>
+          </div>
+        }
+
+        @if (questionForm.controls.tipo.value === 'Cerrada') {
+          <div class="correct-option-field">
+            <label>Respuestas correctas</label>
+            <div class="correct-options-list">
+              @for (option of optionPreview(); track option) {
+                <button
+                  class="correct-option-button"
+                  type="button"
+                  [class.selected]="isCorrectOptionSelected(option)"
+                  (click)="toggleCorrectOption(option)"
+                >
+                  <span aria-hidden="true">{{ isCorrectOptionSelected(option) ? '✓' : '' }}</span>
+                  {{ option }}
+                </button>
+              }
+            </div>
+            @if (questionForm.controls.opcionCorrecta.touched && questionForm.controls.opcionCorrecta.invalid) {
+              <small class="error-text">Selecciona al menos una respuesta correcta.</small>
+            }
+          </div>
+        }
+
+        @if (shouldShowTrueFalse()) {
+          <div class="true-false-block">
+            <div class="true-false-preview">
+              <span>Verdadero</span>
+              <span>Falso</span>
+            </div>
+
+            <div class="correct-option-field">
+              <label for="true-false-correct-option">Respuesta correcta</label>
+              <select id="true-false-correct-option" formControlName="opcionCorrecta">
+                <option value="">Selecciona la respuesta correcta</option>
+                <option value="Verdadero">Verdadero</option>
+                <option value="Falso">Falso</option>
+              </select>
+              @if (questionForm.controls.opcionCorrecta.touched && questionForm.controls.opcionCorrecta.invalid) {
+                <small class="error-text">Selecciona la respuesta correcta.</small>
+              }
+            </div>
+          </div>
+        }
+
+        @if (questionForm.controls.tipo.value === 'Ranking') {
+          <p class="helper-text">El encuestado debera ordenar los elementos segun su criterio.</p>
+        }
+
+        <div class="question-actions-row">
+          <label class="checkbox-field">
+            <input type="checkbox" formControlName="esObligatoria" />
+            Obligatoria
+          </label>
+          <button class="save-survey-button" type="submit">Agregar pregunta</button>
+        </div>
+      </form>
+
+      <div class="question-list">
+        @if (survey.questions.length === 0) {
+          <p class="empty-questions">Esta encuesta aun no tiene preguntas.</p>
+        }
+
+        @for (question of survey.questions; track question.id; let index = $index) {
+          <div class="question-card">
+            <div>
+              <span class="question-number">{{ index + 1 }}</span>
+              <strong>{{ question.enunciado }}</strong>
+            </div>
+            <div class="question-meta">
+              <span>{{ question.tipo }}</span>
+              <span>{{ question.esObligatoria ? 'Obligatoria' : 'Opcional' }}</span>
+            </div>
+            @if (question.opciones.length > 0) {
+              <ul class="option-list">
+                @for (option of question.opciones; track option) {
+                  <li>{{ option }}</li>
+                }
+              </ul>
+            }
+            @if (question.opcionesCorrectas.length > 0) {
+              <p class="correct-answer">Correcta(s): {{ question.opcionesCorrectas.join(', ') }}</p>
+            }
+          </div>
+        }
+      </div>
+    </article>
+  }
 </section>

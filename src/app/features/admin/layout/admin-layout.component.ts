@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { Component, inject, PLATFORM_ID } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 interface SidebarItem {
@@ -14,7 +15,12 @@ interface SidebarItem {
   styleUrl: './admin-layout.component.css'
 })
 export class AdminLayoutComponent {
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = isPlatformBrowser(this.platformId);
+
   isCollapsed = false;
+  readonly userName = this.isBrowser ? localStorage.getItem('user_name') || 'Usuario' : 'Usuario';
+  readonly userRole = this.getStoredRole();
 
   readonly menuItems: SidebarItem[] = [
     { label: 'Dashboard', route: '/admin/dashboard', icon: 'dashboard' },
@@ -33,8 +39,20 @@ export class AdminLayoutComponent {
   }
 
   logout(): void {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_role');
+    if (this.isBrowser) {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_role');
+      localStorage.removeItem('user_name');
+    }
     this.router.navigateByUrl('/auth/admin-login');
+  }
+
+  private getStoredRole(): string {
+    if (!this.isBrowser) {
+      return 'Administrador';
+    }
+
+    const role = localStorage.getItem('user_role');
+    return role && role !== 'undefined' ? role : 'Administrador';
   }
 }

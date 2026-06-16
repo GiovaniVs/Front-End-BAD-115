@@ -16,7 +16,7 @@ export class AdminLoginPageComponent{
     private readonly router = inject(Router);
 
     readonly loginForm = this.formBuilder.nonNullable.group({
-        email: ['', [Validators.required, Validators.email]], 
+        username: ['', [Validators.required, Validators.minLength(3)]], 
         password : ['', [Validators.required, Validators.minLength(6)]]
     })
 
@@ -25,11 +25,12 @@ export class AdminLoginPageComponent{
             this.loginForm.markAllAsTouched(); 
             return; 
         }
-        const {email, password} = this.loginForm.getRawValue(); 
-        this.authService.loginByRole('ADMIN', email, password).subscribe({
+        const {username, password} = this.loginForm.getRawValue(); 
+        this.authService.loginAdmin(username, password).subscribe({
             next:(response)=>{
                 localStorage.setItem('auth_token', response.token); 
-                localStorage.setItem('user_role', response.role);
+                localStorage.setItem('user_role', response.role || 'ADMINISTRADOR');
+                localStorage.setItem('user_name', response.fullName || username);
                 this.router.navigateByUrl('/admin/encuestas');
             },
             error: () => {
