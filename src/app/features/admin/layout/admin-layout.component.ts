@@ -1,5 +1,5 @@
 import { isPlatformBrowser } from '@angular/common';
-import { Component, inject, PLATFORM_ID } from '@angular/core';
+import { Component, inject, OnInit, PLATFORM_ID } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 interface SidebarItem {
@@ -14,7 +14,7 @@ interface SidebarItem {
   templateUrl: './admin-layout.component.html',
   styleUrl: './admin-layout.component.css'
 })
-export class AdminLayoutComponent {
+export class AdminLayoutComponent implements OnInit {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
   private readonly router = inject(Router);
@@ -30,9 +30,16 @@ export class AdminLayoutComponent {
     ? [{ label: 'Diseno de encuestas', route: '/disenador/encuestas', icon: 'surveys' }]
     : [
         { label: 'Gestion de usuarios', route: '/admin/usuarios', icon: 'users' },
+        { label: 'Administradores', route: '/admin/administradores', icon: 'roles' },
         { label: 'Disenadores', route: '/admin/disenadores', icon: 'roles' },
         { label: 'Encuestados', route: '/admin/encuestados', icon: 'respondents' }
       ];
+
+  ngOnInit(): void {
+    if (!this.isDesignerPanel && this.router.url === '/admin') {
+      this.router.navigateByUrl('/admin/usuarios');
+    }
+  }
 
   toggleSidebar(): void {
     this.isCollapsed = !this.isCollapsed;
@@ -40,6 +47,7 @@ export class AdminLayoutComponent {
 
   logout(): void {
     if (this.isBrowser) {
+      localStorage.removeItem('auth_basic_token');
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user_role');
       localStorage.removeItem('user_role_id');

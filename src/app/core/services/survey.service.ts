@@ -8,7 +8,7 @@ import { Survey } from '../models/surveys/survey.model';
 @Injectable({ providedIn: 'root' })
 export class SurveyService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = 'http://localhost:8083/api/encuestas';
+  private readonly baseUrl = '/api/encuestas';
 
   createSurvey(payload: CreateSurveyRequest): Observable<Survey> {
     return this.http.post<Survey>(this.baseUrl, payload, { headers: this.authHeaders });

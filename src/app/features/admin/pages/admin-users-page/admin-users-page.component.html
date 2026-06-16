@@ -2,11 +2,13 @@
   <header class="users-header">
     <div>
       <p class="users-kicker">Administracion</p>
-      <h1>Gestion de usuarios</h1>
-      <p>Administra las cuentas de disenadores y usuarios encuestados desde este panel.</p>
+      <h1>{{ sectionTitle }}</h1>
+      <p>{{ sectionDescription }}</p>
     </div>
 
-    <button class="primary-button" type="button">Nuevo usuario</button>
+    <button class="primary-button" type="button" (click)="loadUsers()" [disabled]="isLoading">
+      {{ isLoading ? 'Cargando...' : 'Actualizar lista' }}
+    </button>
   </header>
 
   <section class="user-summary-grid" aria-label="Resumen de usuarios gestionados">
@@ -24,13 +26,68 @@
     <div class="table-header">
       <div>
         <h2>Usuarios registrados</h2>
-        <p>Esta pantalla queda reservada para listar, crear, editar o desactivar usuarios.</p>
+        <p>Listado de usuarios administrativos devuelto por el backend.</p>
       </div>
     </div>
 
-    <div class="empty-state">
-      <strong>No hay usuarios cargados en la interfaz.</strong>
-      <p>Cuando se conecte el servicio de usuarios, aqui se mostraran disenadores y encuestados.</p>
-    </div>
+    @if (loadError) {
+      <div class="feedback-state error-state">
+        <strong>{{ loadError }}</strong>
+        <p>Verifica que el backend este disponible y que el usuario tenga permisos.</p>
+      </div>
+    } @else if (!isLoading && visibleUsers.length === 0) {
+      <div class="feedback-state">
+        <strong>No hay usuarios registrados.</strong>
+        <p>No se encontraron registros para esta seccion.</p>
+      </div>
+    } @else if (visibleUsers.length > 0) {
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Usuario</th>
+              <th>Correo</th>
+              <th>Rol</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of visibleUsers; track getUserId(user)) {
+              <tr>
+                <td>{{ getUserId(user) }}</td>
+                <td>
+                  <strong>{{ getDisplayName(user) }}</strong>
+                </td>
+                <td>{{ getEmail(user) }}</td>
+                <td>
+                  <span class="role-badge" [class.designer-role]="getRoleId(user) === 2">
+                    {{ getRoleLabel(user) }}
+                  </span>
+                </td>
+                <td>
+                  <span class="status-badge" [class.inactive-status]="user.estado !== 'A'">
+                    {{ getStatusLabel(user) }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination-bar">
+        <span>Pagina {{ page + 1 }} de {{ totalPages }} · {{ totalElements }} registros</span>
+        <div class="pagination-actions">
+          <button type="button" (click)="goToPreviousPage()" [disabled]="!canGoPrevious">Anterior</button>
+          <button type="button" (click)="goToNextPage()" [disabled]="!canGoNext">Siguiente</button>
+        </div>
+      </div>
+    } @else {
+      <div class="feedback-state">
+        <strong>Cargando usuarios...</strong>
+        <p>Consultando {{ currentEndpoint }}</p>
+      </div>
+    }
   </article>
 </section>

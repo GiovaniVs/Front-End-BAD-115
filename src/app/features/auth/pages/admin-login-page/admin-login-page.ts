@@ -1,10 +1,9 @@
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { catchError, map, of, switchMap } from 'rxjs';
 
 import { LoginResponse } from '../../../../core/models/auth/login-response.model';
-import { AuthService, AuthUserAccount } from '../../../../core/services/auth.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component ({
     selector: 'app-admin-login-page',
@@ -28,20 +27,17 @@ export class AdminLoginPageComponent{
             return; 
         }
         const {username, password} = this.loginForm.getRawValue(); 
-        this.authService.loginAdmin(username, password).pipe(
-            switchMap((response) =>
-                this.authService.getUsers(response.token).pipe(
-                    map((users) => ({ response, user: this.findUserByUsername(users, username) })),
-                    catchError(() => of({ response, user: undefined }))
-                )
-            )
-        ).subscribe({
-            next:({ response, user })=>{
-                const roleId = this.getRoleId(response, user);
-                const roleName = this.getRoleName(response, roleId, user);
+        this.authService.loginAdmin(username, password).subscribe({
+            next:(response)=>{
+                const roleId = this.getRoleId(response);
+                const roleName = this.getRoleName(response, roleId);
+
+                localStorage.setItem('auth_basic_token', this.getBasicAuthToken(username, password));
 
                 if (response.token) {
                     localStorage.setItem('auth_token', response.token);
+                } else {
+                    localStorage.setItem('auth_token', this.getBasicAuthToken(username, password));
                 }
                 localStorage.setItem('user_role', roleName);
                 if (roleId) {
@@ -58,11 +54,7 @@ export class AdminLoginPageComponent{
         }); 
     }
 
-    private findUserByUsername(users: AuthUserAccount[], username: string): AuthUserAccount | undefined {
-        return users.find((user) => user.username?.toLowerCase() === username.toLowerCase());
-    }
-
-    private getRoleId(response: LoginResponse, user: AuthUserAccount | undefined): number | undefined {
+    private getRoleId(response: LoginResponse): number | undefined {
         const data = response as LoginResponse & {
             id_rol?: number | string;
             rol?: { idRol?: number | string; id_rol?: number | string; id?: number | string };
@@ -78,11 +70,6 @@ export class AdminLoginPageComponent{
         } | undefined;
 
         return this.toNumber(
-            user?.idRol ??
-            user?.id_rol ??
-            user?.rol?.idRol ??
-            user?.rol?.id_rol ??
-            user?.rol?.id ??
             data.idRol ??
             data.id_rol ??
             data.rol?.idRol ??
@@ -105,7 +92,7 @@ export class AdminLoginPageComponent{
         );
     }
 
-    private getRoleName(response: LoginResponse, idRol: number | undefined, user: AuthUserAccount | undefined): string {
+    private getRoleName(response: LoginResponse, idRol: number | undefined): string {
         if (idRol === 2) {
             return 'DISENADOR';
         }
@@ -127,9 +114,6 @@ export class AdminLoginPageComponent{
         } | undefined;
 
         const roleName = this.firstText(
-            user?.rol?.nombreRol,
-            user?.rol?.nombre_rol,
-            user?.rol?.nombre,
             response.role,
             data.rol?.nombreRol,
             data.rol?.nombre,
@@ -202,6 +186,10 @@ export class AdminLoginPageComponent{
     private toNumber(value: unknown): number | undefined {
         const numericValue = Number(value);
         return Number.isFinite(numericValue) ? numericValue : undefined;
+    }
+
+    private getBasicAuthToken(username: string, password: string): string {
+        return `Basic ${btoa(`${username}:${password}`)}`;
     }
 
 }
