@@ -40,7 +40,9 @@ export class RegisterPageComponent {
       debeCambiarPass: false
     }).subscribe({
       next: () => {
-        this.router.navigateByUrl('/auth/admin-login');
+        localStorage.setItem('user_name', username);
+        localStorage.setItem('user_role', 'ADMINISTRADOR');
+        this.router.navigateByUrl('/admin/encuestas');
       },
       error: () => {
         this.registerForm.controls.correo.setErrors({ registerError: true });
