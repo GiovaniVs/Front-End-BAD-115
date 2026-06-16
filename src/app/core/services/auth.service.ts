@@ -11,6 +11,7 @@ import { UserRole } from '../models/auth/user-role.model';
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl =  'http://localhost:8083/api/auth';
+  private readonly usersUrl = 'http://localhost:8083/api/usuarios';
 
   loginByRole(role: UserRole, email: string, password: string): Observable<LoginResponse> {
     const payload: LoginRequest = { email, password, role };
@@ -21,7 +22,7 @@ export class AuthService {
     return this.http.post<LoginResponse>(`${this.baseUrl}/login`, { username, password });
   }
 
-  register(payload: RegisterRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.baseUrl}/register`, payload);
+  register(payload: RegisterRequest): Observable<unknown> {
+    return this.http.post<unknown>(this.usersUrl, payload);
   }
 }

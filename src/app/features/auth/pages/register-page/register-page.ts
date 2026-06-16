@@ -2,7 +2,6 @@ import { Component, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
-import { UserRole } from '../../../../core/models/auth/user-role.model';
 import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
@@ -18,11 +17,10 @@ export class RegisterPageComponent {
 
   readonly registerForm = this.formBuilder.nonNullable.group(
     {
-      name: ['', [Validators.required, Validators.minLength(3)]],
-      email: ['', [Validators.required, Validators.email]],
+      username: ['', [Validators.required, Validators.minLength(3)]],
+      correo: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
-      confirmPassword: ['', [Validators.required]],
-      role: this.formBuilder.nonNullable.control<UserRole>('ENCUESTADO', [Validators.required])
+      confirmPassword: ['', [Validators.required]]
     },
     { validators: this.passwordsMatch }
   );
@@ -33,15 +31,19 @@ export class RegisterPageComponent {
       return;
     }
 
-    const { name, email, password, role } = this.registerForm.getRawValue();
-    this.authService.register({ name, email, password, role }).subscribe({
-      next: (response) => {
-        localStorage.setItem('auth_token', response.token);
-        localStorage.setItem('user_role', response.role);
-        this.router.navigateByUrl(role === 'ADMIN' ? '/admin/encuestas' : '/auth/encuestado-login');
+    const { username, correo, password } = this.registerForm.getRawValue();
+    this.authService.register({
+      username,
+      password,
+      correo,
+      rol: { idRol: 1 },
+      debeCambiarPass: false
+    }).subscribe({
+      next: () => {
+        this.router.navigateByUrl('/auth/admin-login');
       },
       error: () => {
-        this.registerForm.controls.email.setErrors({ registerError: true });
+        this.registerForm.controls.correo.setErrors({ registerError: true });
       }
     });
   }

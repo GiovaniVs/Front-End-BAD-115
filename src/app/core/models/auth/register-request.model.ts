@@ -1,8 +1,9 @@
-import { UserRole } from './user-role.model';
-
 export interface RegisterRequest {
-  name: string;
-  email: string;
+  username: string;
   password: string;
-  role: UserRole;
+  correo: string;
+  rol: {
+    idRol: number;
+  };
+  debeCambiarPass: boolean;
 }

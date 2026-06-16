@@ -4,44 +4,24 @@
 
   <article class="register-card">
     <div class="intro">
-      <p class="eyebrow">Crear cuenta</p>
-      <h1>Registrate segun tu rol</h1>
-      <p class="subtitle">Elige si administraras encuestas o si participaras respondiendolas.</p>
+      <p class="eyebrow">Crear administrador</p>
+      <h1>Registro de administrador</h1>
+      <p class="subtitle">Crea una cuenta con permisos para administrar encuestas.</p>
     </div>
 
     <form class="register-form" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
-      <fieldset class="role-options">
-        <legend>Tipo de usuario</legend>
-
-        <label class="role-card">
-          <input type="radio" formControlName="role" value="ENCUESTADO" />
-          <span>
-            <strong>Encuestado</strong>
-            <small>Responder encuestas asignadas.</small>
-          </span>
-        </label>
-
-        <label class="role-card">
-          <input type="radio" formControlName="role" value="ADMIN" />
-          <span>
-            <strong>Administrador</strong>
-            <small>Crear encuestas y revisar resultados.</small>
-          </span>
-        </label>
-      </fieldset>
-
-      <label for="register-name">Nombre completo</label>
-      <input id="register-name" formControlName="name" type="text" placeholder="Tu nombre" />
-      @if (registerForm.controls.name.touched && registerForm.controls.name.invalid) {
+      <label for="register-username">Usuario</label>
+      <input id="register-username" formControlName="username" type="text" placeholder="admin2" />
+      @if (registerForm.controls.username.touched && registerForm.controls.username.invalid) {
       <small class="error-text">Ingresa al menos 3 caracteres.</small>
       }
 
       <label for="register-email">Correo</label>
-      <input id="register-email" formControlName="email" type="email" placeholder="correo@ejemplo.com" />
-      @if (registerForm.controls.email.touched && registerForm.controls.email.errors?.['email']) {
+      <input id="register-email" formControlName="correo" type="email" placeholder="admin2@test.com" />
+      @if (registerForm.controls.correo.touched && registerForm.controls.correo.errors?.['email']) {
       <small class="error-text">Ingresa un correo valido.</small>
       }
-      @if (registerForm.controls.email.errors?.['registerError']) {
+      @if (registerForm.controls.correo.errors?.['registerError']) {
       <small class="error-text">No se pudo crear la cuenta. Revisa los datos e intenta nuevamente.</small>
       }
 
