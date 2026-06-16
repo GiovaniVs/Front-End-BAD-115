@@ -3,15 +3,15 @@
   <div class="bg-shape shape-bottom" aria-hidden="true"></div>
 
   <article class="auth-card">
-    <p class="eyebrow">Panel de administracion</p>
-    <h1>Acceso para administradores</h1>
-    <p class="subtitle">Crea encuestas, organiza preguntas y revisa resultados en tiempo real.</p>
+    <p class="eyebrow">Panel de gestion</p>
+    <h1>Acceso para administradores y disenadores</h1>
+    <p class="subtitle">Los disenadores crean encuestas; los administradores gestionan usuarios y privilegios.</p>
 
     <form class="auth-form" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
       <label for="admin-name">Usuario</label>
       <input id="admin-name" formControlName="username" type="text" placeholder="User name" />
       @if (loginForm.controls.username.touched && loginForm.controls.username.invalid) {
-      <small class="error-text">Ingresa el nombre del administrador.</small>
+      <small class="error-text">Ingresa el nombre de usuario.</small>
       }
 
       <label for="admin-password">Contrasena</label>
@@ -30,7 +30,7 @@
     </form>
 
     <p class="switch-text">
-      Eres encuestado?
+      Eres usuario encuestado?
       <a routerLink="/auth/encuestado-login">Ingresar para responder encuesta</a>
     </p>
 

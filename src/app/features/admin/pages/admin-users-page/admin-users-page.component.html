@@ -1,0 +1,36 @@
+<section class="users-page">
+  <header class="users-header">
+    <div>
+      <p class="users-kicker">Administracion</p>
+      <h1>Gestion de usuarios</h1>
+      <p>Administra las cuentas de disenadores y usuarios encuestados desde este panel.</p>
+    </div>
+
+    <button class="primary-button" type="button">Nuevo usuario</button>
+  </header>
+
+  <section class="user-summary-grid" aria-label="Resumen de usuarios gestionados">
+    @for (group of userGroups; track group.title) {
+      <article class="user-summary-card">
+        <span>{{ group.role }}</span>
+        <strong>{{ group.title }}</strong>
+        <p>{{ group.description }}</p>
+        <small>{{ group.count }} registrados</small>
+      </article>
+    }
+  </section>
+
+  <article class="users-table-card">
+    <div class="table-header">
+      <div>
+        <h2>Usuarios registrados</h2>
+        <p>Esta pantalla queda reservada para listar, crear, editar o desactivar usuarios.</p>
+      </div>
+    </div>
+
+    <div class="empty-state">
+      <strong>No hay usuarios cargados en la interfaz.</strong>
+      <p>Cuando se conecte el servicio de usuarios, aqui se mostraran disenadores y encuestados.</p>
+    </div>
+  </article>
+</section>

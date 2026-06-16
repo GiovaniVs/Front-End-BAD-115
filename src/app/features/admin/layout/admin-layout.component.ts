@@ -17,22 +17,22 @@ interface SidebarItem {
 export class AdminLayoutComponent {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
+  private readonly router = inject(Router);
 
   isCollapsed = false;
   readonly userName = this.isBrowser ? localStorage.getItem('user_name') || 'Usuario' : 'Usuario';
   readonly userRole = this.getStoredRole();
+  readonly isDesignerPanel = this.router.url.startsWith('/disenador');
+  readonly panelTitle = this.isDesignerPanel ? 'Panel de Diseno' : 'Panel de Administracion';
+  readonly homeRoute = this.isDesignerPanel ? '/disenador/encuestas' : '/admin/usuarios';
 
-  readonly menuItems: SidebarItem[] = [
-    { label: 'Dashboard', route: '/admin/dashboard', icon: 'dashboard' },
-    { label: 'Encuestas', route: '/admin/encuestas', icon: 'surveys' },
-    { label: 'Usuarios', route: '/admin/usuarios', icon: 'users' },
-    { label: 'Roles', route: '/admin/roles', icon: 'roles' },
-    { label: 'Encuestados', route: '/admin/encuestados', icon: 'respondents' },
-    { label: 'Analitica', route: '/admin/analitica', icon: 'analytics' },
-    { label: 'Reportes', route: '/admin/reportes', icon: 'reports' }
-  ];
-
-  constructor(private readonly router: Router) {}
+  readonly menuItems: SidebarItem[] = this.isDesignerPanel
+    ? [{ label: 'Diseno de encuestas', route: '/disenador/encuestas', icon: 'surveys' }]
+    : [
+        { label: 'Gestion de usuarios', route: '/admin/usuarios', icon: 'users' },
+        { label: 'Disenadores', route: '/admin/disenadores', icon: 'roles' },
+        { label: 'Encuestados', route: '/admin/encuestados', icon: 'respondents' }
+      ];
 
   toggleSidebar(): void {
     this.isCollapsed = !this.isCollapsed;
@@ -42,17 +42,33 @@ export class AdminLayoutComponent {
     if (this.isBrowser) {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user_role');
+      localStorage.removeItem('user_role_id');
       localStorage.removeItem('user_name');
     }
     this.router.navigateByUrl('/auth/admin-login');
   }
 
   private getStoredRole(): string {
+    const defaultRole = this.router.url.startsWith('/disenador') ? 'Disenador' : 'Administrador';
+
     if (!this.isBrowser) {
-      return 'Administrador';
+      return defaultRole;
     }
 
     const role = localStorage.getItem('user_role');
-    return role && role !== 'undefined' ? role : 'Administrador';
+    if (!role || role === 'undefined') {
+      return defaultRole;
+    }
+
+    const normalizedRole = role.toUpperCase();
+    if (normalizedRole === 'ADMIN' || normalizedRole.includes('ADMINISTRADOR')) {
+      return 'Administrador';
+    }
+
+    if (normalizedRole.includes('DISENADOR')) {
+      return 'Disenador';
+    }
+
+    return role;
   }
 }

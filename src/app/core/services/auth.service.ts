@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -6,6 +6,20 @@ import { LoginRequest } from '../models/auth/login-request.model';
 import { LoginResponse } from '../models/auth/login-response.model';
 import { RegisterRequest } from '../models/auth/register-request.model';
 import { UserRole } from '../models/auth/user-role.model';
+
+export interface AuthUserAccount {
+  idRol?: number;
+  id_rol?: number;
+  username?: string;
+  rol?: {
+    idRol?: number;
+    id_rol?: number;
+    id?: number;
+    nombreRol?: string;
+    nombre_rol?: string;
+    nombre?: string;
+  };
+}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -25,6 +39,11 @@ export class AuthService {
 
   register(payload: RegisterRequest): Observable<unknown> {
     return this.http.post<unknown>(this.usersUrl, payload);
+  }
+
+  getUsers(token?: string): Observable<AuthUserAccount[]> {
+    const options = token ? { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) } : undefined;
+    return this.http.get<AuthUserAccount[]>(this.usersUrl, options);
   }
 
   registerRespondent(payload: {

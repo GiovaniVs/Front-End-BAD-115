@@ -1,19 +1,19 @@
 <section class="surveys-page">
   <header class="survey-header">
     <div>
-      <p class="survey-kicker">Administracion</p>
-      <h1>Encuestas</h1>
+      <p class="survey-kicker">Diseno de encuestas</p>
+      <h1>Constructor de encuestas</h1>
     </div>
 
     <button class="new-survey-button" type="button" (click)="toggleCreateForm()">
       <span aria-hidden="true">+</span>
-      {{ showCreateForm ? 'Cancelar' : 'Nueva Encuesta' }}
+      {{ showCreateForm ? 'Cancelar' : 'Nueva encuesta' }}
     </button>
   </header>
 
   @if (showCreateForm) {
     <article class="survey-form-card">
-      <h2>Crear encuesta</h2>
+      <h2>Crear encuesta como disenador</h2>
 
       <form class="survey-form" [formGroup]="surveyForm" (ngSubmit)="createSurvey()">
         <label for="survey-title">Titulo</label>

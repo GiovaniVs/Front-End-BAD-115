@@ -6,6 +6,10 @@ export const routes: Routes = [
     loadChildren: () => import('./features/admin/admin.routes').then((m) => m.ADMIN_ROUTES)
   },
   {
+    path: 'disenador',
+    loadChildren: () => import('./features/admin/admin.routes').then((m) => m.DESIGNER_ROUTES)
+  },
+  {
     path: 'encuestado',
     loadChildren: () => import('./features/respondent/respondent.routes').then((m) => m.RESPONDENT_ROUTES)
   },

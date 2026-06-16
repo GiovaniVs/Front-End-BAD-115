@@ -6,7 +6,7 @@
     <div class="intro">
       <p class="eyebrow">Crear cuenta</p>
       <h1>Registrate segun tu rol</h1>
-      <p class="subtitle">Elige si administraras encuestas o si participaras respondiendolas.</p>
+      <p class="subtitle">Elige si crearas encuestas como disenador o si participaras respondiendolas.</p>
     </div>
 
     <form class="register-form" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
@@ -22,10 +22,10 @@
         </label>
 
         <label class="role-card">
-          <input type="radio" formControlName="accountType" value="ADMIN" (change)="onAccountTypeChange()" />
+          <input type="radio" formControlName="accountType" value="DISENADOR" (change)="onAccountTypeChange()" />
           <span>
-            <strong>Administrador</strong>
-            <small>Crear encuestas y revisar resultados.</small>
+            <strong>Disenador</strong>
+            <small>Crear encuestas, organizar preguntas y revisar resultados.</small>
           </span>
         </label>
       </fieldset>

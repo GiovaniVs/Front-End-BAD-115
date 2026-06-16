@@ -4,7 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../../../core/services/auth.service';
 
-type AccountType = 'ENCUESTADO' | 'ADMIN';
+type AccountType = 'ENCUESTADO' | 'DISENADOR';
 
 @Component({
   selector: 'app-register-page',
@@ -59,13 +59,13 @@ export class RegisterPageComponent {
       username,
       password,
       correo,
-      rol: { idRol: 1 },
+      rol: { idRol: 2 },
       debeCambiarPass: false
     }).subscribe({
       next: () => {
         localStorage.setItem('user_name', username);
-        localStorage.setItem('user_role', 'ADMINISTRADOR');
-        this.router.navigateByUrl('/admin/encuestas');
+        localStorage.setItem('user_role', 'DISENADOR');
+        this.router.navigateByUrl('/disenador/encuestas');
       },
       error: () => {
         this.registerForm.controls.correo.setErrors({ registerError: true });
@@ -78,7 +78,7 @@ export class RegisterPageComponent {
   }
 
   isAdminSelected(): boolean {
-    return this.registerForm.controls.accountType.value === 'ADMIN';
+    return this.registerForm.controls.accountType.value === 'DISENADOR';
   }
 
   onAccountTypeChange(): void {
