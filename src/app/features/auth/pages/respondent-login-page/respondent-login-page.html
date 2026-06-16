@@ -1,6 +1,4 @@
 <section class="auth-page respondent-theme">
-  <div class="mesh"></div>
-
   <article class="auth-card">
     <p class="eyebrow">Zona de participantes</p>
     <h1>Ingresa para responder encuestas</h1>
@@ -12,20 +10,28 @@
       @if (loginForm.controls.email.touched && loginForm.controls.email.invalid) {
       <small class="error-text">Ingresa un correo valido.</small>
       }
-
-      <label for="resp-password">Contrasena</label>
-      <input id="resp-password" formControlName="password" type="password" placeholder="Ingresa tu contrasena" />
-      @if (loginForm.controls.password.touched && loginForm.controls.password.errors?.['required']) {
-      <small class="error-text">La contrasena es obligatoria.</small>
-      }
-      @if (loginForm.controls.password.touched && loginForm.controls.password.errors?.['minlength']) {
-      <small class="error-text">Minimo 6 caracteres.</small>
-      }
-      @if (loginForm.controls.password.errors?.['invalidCredentials']) {
-      <small class="error-text">Credenciales invalidas.</small>
+      @if (loginForm.controls.email.errors?.['loginError']) {
+      <small class="error-text">No se pudo enviar el codigo. Verifica el correo.</small>
       }
 
-      <button type="submit">Comenzar</button>
+      @if (tokenSent) {
+      <label for="resp-token">Codigo de verificacion</label>
+      <input id="resp-token" formControlName="token" type="text" placeholder="Ingresa el codigo recibido" />
+      @if (loginForm.controls.token.touched && loginForm.controls.token.errors?.['required']) {
+      <small class="error-text">Ingresa el codigo enviado a tu correo.</small>
+      }
+      @if (loginForm.controls.token.errors?.['invalidToken']) {
+      <small class="error-text">Codigo invalido o vencido.</small>
+      }
+      }
+
+      @if (message) {
+      <small class="success-text">{{ message }}</small>
+      }
+
+      <button type="submit" [disabled]="isLoading">
+        {{ isLoading ? 'Procesando...' : tokenSent ? 'Validar codigo' : 'Enviar codigo' }}
+      </button>
     </form>
 
     <p class="switch-text">

@@ -1,0 +1,41 @@
+<section class="respondent-home">
+  <article class="hero-card">
+    <p class="eyebrow">Panel del encuestado</p>
+    <h1>Encuestas asignadas</h1>
+    <p>Revisa las encuestas disponibles y responde cada cuestionario desde este panel.</p>
+  </article>
+
+  <section class="summary-grid" aria-label="Resumen de encuestas">
+    <article>
+      <strong>{{ surveys.length }}</strong>
+      <span>Disponibles</span>
+    </article>
+    <article>
+      <strong>0</strong>
+      <span>Completadas</span>
+    </article>
+    <article>
+      <strong>{{ surveys.length }}</strong>
+      <span>Pendientes</span>
+    </article>
+  </section>
+
+  <section class="survey-list" aria-label="Listado de encuestas">
+    @for (survey of surveys; track survey.title) {
+      <article class="survey-card">
+        <div>
+          <span class="status-pill">{{ survey.status }}</span>
+          <h2>{{ survey.title }}</h2>
+          <p>{{ survey.description }}</p>
+        </div>
+
+        <div class="survey-meta">
+          <span>{{ survey.questions }} preguntas</span>
+          <span>{{ survey.dueDate }}</span>
+        </div>
+
+        <button type="button">Responder encuesta</button>
+      </article>
+    }
+  </section>
+</section>

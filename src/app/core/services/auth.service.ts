@@ -12,6 +12,7 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl =  'http://localhost:8083/api/auth';
   private readonly usersUrl = 'http://localhost:8083/api/usuarios';
+  private readonly respondentsUrl = 'http://localhost:8083/api/encuestados';
 
   loginByRole(role: UserRole, email: string, password: string): Observable<LoginResponse> {
     const payload: LoginRequest = { email, password, role };
@@ -24,5 +25,18 @@ export class AuthService {
 
   register(payload: RegisterRequest): Observable<unknown> {
     return this.http.post<unknown>(this.usersUrl, payload);
+  }
+
+  requestRespondentToken(correo: string): Observable<string> {
+    return this.http.post(`${this.respondentsUrl}/login-encuestado`, null, {
+      params: { correo },
+      responseType: 'text'
+    });
+  }
+
+  verifyRespondentToken(correo: string, token: string): Observable<unknown> {
+    return this.http.post<unknown>(`${this.respondentsUrl}/verificar-token`, null, {
+      params: { correo, token }
+    });
   }
 }

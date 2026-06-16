@@ -1,0 +1,31 @@
+<section class="respondent-shell">
+  <header class="respondent-topbar">
+    <a class="brand" routerLink="/encuestado/inicio" aria-label="SurveyCore">
+      <span class="brand-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M7 4h10a2 2 0 0 1 2 2v16l-3-2-3 2-3-2-3 2V6a2 2 0 0 1 2-2Z" />
+          <path d="M9 8h6M9 12h6M9 16h4" />
+        </svg>
+      </span>
+      <span>SurveyCore</span>
+    </a>
+
+    <div class="topbar-user">
+      <div class="user-copy">
+        <strong>{{ respondentEmail }}</strong>
+        <span>{{ userRole }}</span>
+      </div>
+      <button class="logout-button" type="button" (click)="logout()">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M10 17 15 12l-5-5M15 12H3" />
+          <path d="M14 4h5a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-5" />
+        </svg>
+        <span>Salir</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="respondent-content">
+    <router-outlet />
+  </main>
+</section>
