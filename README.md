@@ -1,59 +1,47 @@
-# FrontEndBad
+## Ejecución del proyecto
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.13.
+### 1. Instalar dependencias
 
-## Development server
+Abra una terminal en la carpeta raíz del proyecto y ejecute:
 
-To start a local development server, run:
+```bash
+npm install
+```
+
+### 2. Iniciar el servidor de desarrollo
+
+Ejecute el siguiente comando:
 
 ```bash
 ng serve
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+### 3. Acceder a la aplicación
 
-## Code scaffolding
+Una vez iniciado el servidor, abra su navegador y visite:
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
+```text
+http://localhost:4200/
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+La aplicación se actualizará automáticamente cuando se realicen cambios en el código fuente.
 
-```bash
-ng generate --help
-```
+### Comandos útiles
 
-## Building
-
-To build the project run:
+**Compilar el proyecto**
 
 ```bash
 ng build
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+**Ejecutar pruebas unitarias**
 
 ```bash
 ng test
 ```
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
+**Ejecutar pruebas E2E**
 
 ```bash
 ng e2e
 ```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
