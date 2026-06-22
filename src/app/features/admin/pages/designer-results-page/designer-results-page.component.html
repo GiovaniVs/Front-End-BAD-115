@@ -1,0 +1,99 @@
+<section class="results-page">
+  <header class="results-header">
+    <div>
+      <p class="kicker">Resultados de encuestas</p>
+      <h1>Resumen de participacion</h1>
+      <p>Consulta asignaciones, respuestas completadas, pendientes y tasa de respuesta por encuesta.</p>
+    </div>
+  </header>
+
+  <article class="selector-card">
+    <label for="survey-results-select">Encuesta</label>
+    <select id="survey-results-select" [(ngModel)]="selectedSurveyId" (change)="loadSummary()" [disabled]="isLoadingSurveys || surveys.length === 0">
+      @for (survey of surveys; track survey.idEncuesta || survey.id_encuesta || survey.titulo) {
+        <option [ngValue]="survey.idEncuesta || survey.id_encuesta">{{ survey.titulo }}</option>
+      }
+    </select>
+
+    @if (isLoadingSurveys) {
+      <small>Cargando encuestas...</small>
+    }
+    @if (!isLoadingSurveys && surveys.length === 0 && !loadError) {
+      <small>No hay encuestas disponibles para mostrar resultados.</small>
+    }
+    @if (loadError) {
+      <small class="error-text">{{ loadError }}</small>
+    }
+  </article>
+
+  @if (isLoadingSummary) {
+    <article class="state-card">Cargando resumen...</article>
+  }
+
+  @if (!isLoadingSummary && summaryError) {
+    <article class="state-card error-text">{{ summaryError }}</article>
+  }
+
+  @if (!isLoadingSummary && summary) {
+    <section class="summary-grid" aria-label="Indicadores de resumen">
+      <article>
+        <span>Asignados</span>
+        <strong>{{ summary.totalAsignados }}</strong>
+      </article>
+      <article>
+        <span>Completados</span>
+        <strong>{{ summary.totalCompletados }}</strong>
+      </article>
+      <article>
+        <span>Pendientes</span>
+        <strong>{{ summary.totalPendientes }}</strong>
+      </article>
+      <article>
+        <span>Tiempo promedio</span>
+        <strong>{{ formatAverageTime(summary.tiempoPromedioSegundos) }}</strong>
+      </article>
+    </section>
+
+    <section class="charts-grid" aria-label="Graficas de resultados">
+      <article class="chart-card response-chart">
+        <div>
+          <p class="kicker">Tasa de respuesta</p>
+          <h2>{{ selectedSurveyTitle }}</h2>
+        </div>
+        <div class="donut" [style.background]="getCompletionCircleStyle()">
+          <div>
+            <strong>{{ getCompletionPercent() }}%</strong>
+            <span>completado</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="chart-card bars-card">
+        <div>
+          <p class="kicker">Estado de participaciones</p>
+          <h2>Completadas vs pendientes</h2>
+        </div>
+
+        <div class="bar-row">
+          <div class="bar-copy">
+            <strong>Completadas</strong>
+            <span>{{ summary.totalCompletados }} respuestas</span>
+          </div>
+          <div class="bar-track">
+            <span class="completed-bar" [style.width.%]="getCompletionPercent()"></span>
+          </div>
+        </div>
+
+        <div class="bar-row">
+          <div class="bar-copy">
+            <strong>Pendientes</strong>
+            <span>{{ summary.totalPendientes }} asignaciones</span>
+          </div>
+          <div class="bar-track">
+            <span class="pending-bar" [style.width.%]="getPendingPercent()"></span>
+          </div>
+        </div>
+      </article>
+    </section>
+  }
+</section>

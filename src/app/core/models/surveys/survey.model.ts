@@ -80,3 +80,11 @@ export interface PublicSurveyAnswer {
   idOpcion?: number;
   textoRespuesta?: string;
 }
+
+export interface SurveySummary {
+  totalAsignados: number;
+  totalCompletados: number;
+  totalPendientes: number;
+  tasaRespuesta: number;
+  tiempoPromedioSegundos: number;
+}

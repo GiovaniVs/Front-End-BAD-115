@@ -27,7 +27,10 @@ export class AdminLayoutComponent implements OnInit {
   readonly homeRoute = this.isDesignerPanel ? '/disenador/encuestas' : '/admin/usuarios';
 
   readonly menuItems: SidebarItem[] = this.isDesignerPanel
-    ? [{ label: 'Diseno de encuestas', route: '/disenador/encuestas', icon: 'surveys' }]
+    ? [
+        { label: 'Diseno de encuestas', route: '/disenador/encuestas', icon: 'surveys' },
+        { label: 'Resultados', route: '/disenador/resultados', icon: 'analytics' }
+      ]
     : [
         { label: 'Gestion de usuarios', route: '/admin/usuarios', icon: 'users' },
         { label: 'Administradores', route: '/admin/administradores', icon: 'roles' },

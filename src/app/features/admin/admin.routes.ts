@@ -46,6 +46,13 @@ export const DESIGNER_ROUTES: Routes = [
             (m) => m.AdminSurveysPageComponent
           )
       },
+      {
+        path: 'resultados',
+        loadComponent: () =>
+          import('./pages/designer-results-page/designer-results-page.component').then(
+            (m) => m.DesignerResultsPageComponent
+          )
+      },
       { path: '**', redirectTo: 'encuestas' }
     ]
   }

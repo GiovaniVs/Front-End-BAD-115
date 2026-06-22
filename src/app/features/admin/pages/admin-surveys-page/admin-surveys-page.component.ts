@@ -145,6 +145,10 @@ export class AdminSurveysPageComponent implements OnInit, OnDestroy {
   }
 
   loadSurveys(silent = false): void {
+    if (silent && this.hasUnsavedSurveyChanges()) {
+      return;
+    }
+
     if (!silent) {
       this.isLoadingSurveys = true;
     }
@@ -613,7 +617,21 @@ export class AdminSurveysPageComponent implements OnInit, OnDestroy {
       return 'El backend rechazo los datos de la encuesta. Revisa que cada pregunta tenga el tipo y opciones correctas.';
     }
 
+    const backendMessage = this.getBackendErrorMessage(error);
+    if (backendMessage) {
+      return backendMessage;
+    }
+
     return `No se pudo guardar la encuesta. Error ${error.status}.`;
+  }
+
+  private getBackendErrorMessage(error: HttpErrorResponse): string | undefined {
+    if (typeof error.error === 'string') {
+      return error.error;
+    }
+
+    const errorBody = error.error as { mensaje?: string; message?: string; error?: string } | undefined;
+    return errorBody?.mensaje || errorBody?.message || errorBody?.error;
   }
 
   private getStatusErrorMessage(error: unknown): string {
@@ -768,6 +786,10 @@ export class AdminSurveysPageComponent implements OnInit, OnDestroy {
     }
 
     return 'BORRADOR';
+  }
+
+  private hasUnsavedSurveyChanges(): boolean {
+    return this.surveys.some((survey) => survey.saved === false);
   }
 
   private toRespondentOption(user: AuthUserAccount): RespondentOption | undefined {

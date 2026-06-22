@@ -4,7 +4,7 @@ import { Observable, of } from 'rxjs';
 import { catchError, map, timeout } from 'rxjs/operators';
 
 import { CreateSurveyRequest } from '../models/surveys/create-survey-request.model';
-import { PublicSurvey, PublicSurveyAnswer, Survey, SurveyAssignment, SurveyQuestionDetail } from '../models/surveys/survey.model';
+import { PublicSurvey, PublicSurveyAnswer, Survey, SurveyAssignment, SurveyQuestionDetail, SurveySummary } from '../models/surveys/survey.model';
 
 interface SurveyAssignmentResponseWrapper {
   data?: SurveyAssignment[];
@@ -73,6 +73,15 @@ export class SurveyService {
     return this.http.patch(`${this.baseUrl}/${idEncuesta}/${estado}`, null, {
       headers: token ? this.getAuthHeaders(token) : undefined,
       responseType: 'text',
+      withCredentials: true
+    }).pipe(timeout(15000));
+  }
+
+  getSurveySummary(idEncuesta: number): Observable<SurveySummary> {
+    const token = this.getStoredToken();
+
+    return this.http.get<SurveySummary>(`${this.baseUrl}/${idEncuesta}/resumen-encuesta`, {
+      headers: token ? this.getAuthHeaders(token) : undefined,
       withCredentials: true
     }).pipe(timeout(15000));
   }
