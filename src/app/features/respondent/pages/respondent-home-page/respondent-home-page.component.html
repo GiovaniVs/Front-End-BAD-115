@@ -21,6 +21,18 @@
   </section>
 
   <section class="survey-list" aria-label="Listado de encuestas">
+    <div class="filter-card">
+      <div>
+        <strong>Filtrar encuestas</strong>
+        <span>{{ filteredSurveys.length }} de {{ surveys.length }} asignadas</span>
+      </div>
+      <div class="filter-pills" aria-label="Filtro de encuestas asignadas">
+        <button type="button" [class.active]="surveyFilter === 'TODAS'" (click)="setSurveyFilter('TODAS')">Todas</button>
+        <button type="button" [class.active]="surveyFilter === 'PENDIENTES'" (click)="setSurveyFilter('PENDIENTES')">Pendientes</button>
+        <button type="button" [class.active]="surveyFilter === 'COMPLETADAS'" (click)="setSurveyFilter('COMPLETADAS')">Contestadas</button>
+      </div>
+    </div>
+
     @if (isLoading) {
       <article class="empty-card">Cargando encuestas asignadas...</article>
     }
@@ -33,10 +45,14 @@
       <article class="empty-card">Aun no tienes encuestas asignadas.</article>
     }
 
-    @for (survey of pendingSurveys; track survey.id) {
-      <article class="survey-card pending-card">
+    @if (!isLoading && !loadError && surveys.length > 0 && filteredSurveys.length === 0) {
+      <article class="empty-card">No hay encuestas en este filtro.</article>
+    }
+
+    @for (survey of filteredSurveys; track survey.id) {
+      <article class="survey-card" [class.pending-card]="survey.status === 'Pendiente'" [class.completed-card]="survey.status === 'Completada'">
         <div>
-          <span class="status-pill">{{ survey.status }}</span>
+          <span class="status-pill" [class.completed-pill]="survey.status === 'Completada'">{{ survey.status }}</span>
           <h2>{{ survey.title }}</h2>
           <p>{{ survey.description }}</p>
         </div>
@@ -46,32 +62,13 @@
           <span>{{ survey.dateText }}</span>
         </div>
 
-        @if (survey.token) {
+        @if (survey.status === 'Pendiente' && survey.token) {
           <a class="answer-button" [routerLink]="['/encuestado/responder', survey.token]">Responder encuesta</a>
-        } @else {
+        } @else if (survey.status === 'Pendiente') {
           <button type="button" disabled>Sin acceso</button>
+        } @else {
+          <button type="button" disabled>Respondida</button>
         }
-      </article>
-    }
-
-    @if (completedSurveys.length > 0) {
-      <h2 class="section-title">Encuestas respondidas</h2>
-    }
-
-    @for (survey of completedSurveys; track survey.id) {
-      <article class="survey-card completed-card">
-        <div>
-          <span class="status-pill completed-pill">{{ survey.status }}</span>
-          <h2>{{ survey.title }}</h2>
-          <p>{{ survey.description }}</p>
-        </div>
-
-        <div class="survey-meta">
-          <span>{{ survey.questions }} preguntas</span>
-          <span>{{ survey.dateText }}</span>
-        </div>
-
-        <button type="button" disabled>Respondida</button>
       </article>
     }
   </section>

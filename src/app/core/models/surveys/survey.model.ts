@@ -25,6 +25,10 @@ export interface Survey {
   fechaCreacion?: string;
   fecha_creacion?: string;
   creadorPor?: string;
+  totalAsignadas?: number;
+  total_asignadas?: number;
+  totalCompletadas?: number;
+  total_completadas?: number;
   preguntas?: SurveyQuestionDetail[];
 }
 

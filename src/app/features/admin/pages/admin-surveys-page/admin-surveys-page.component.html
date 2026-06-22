@@ -48,6 +48,20 @@
   }
 
   <article class="survey-table-card">
+    <div class="table-toolbar">
+      <div>
+        <strong>Filtrar encuestas</strong>
+        <span>{{ filteredSurveys.length }} de {{ surveys.length }} encuestas</span>
+      </div>
+      <div class="filter-pills" aria-label="Filtro por estado de encuesta">
+        <button type="button" [class.active]="surveyStatusFilter === 'TODAS'" (click)="setSurveyStatusFilter('TODAS')">Todas</button>
+        <button type="button" [class.active]="surveyStatusFilter === 'BORRADOR'" (click)="setSurveyStatusFilter('BORRADOR')">Borrador</button>
+        <button type="button" [class.active]="surveyStatusFilter === 'PUBLICADA'" (click)="setSurveyStatusFilter('PUBLICADA')">Publicadas</button>
+        <button type="button" [class.active]="surveyStatusFilter === 'FINALIZADA'" (click)="setSurveyStatusFilter('FINALIZADA')">Finalizadas</button>
+        <button type="button" [class.active]="surveyStatusFilter === 'INACTIVA'" (click)="setSurveyStatusFilter('INACTIVA')">Inactivas</button>
+        <button type="button" [class.active]="surveyStatusFilter === 'CONTESTADAS'" (click)="setSurveyStatusFilter('CONTESTADAS')">Contestadas</button>
+      </div>
+    </div>
     <div class="table-scroll">
       <table>
         <thead>
@@ -55,7 +69,8 @@
             <th>Titulo</th>
             <th>Estado</th>
             <th>Preguntas</th>
-            <th>Respuestas</th>
+            <th>Asignadas</th>
+            <th>Contestadas</th>
             <th>Fecha</th>
             <th>Acciones</th>
           </tr>
@@ -63,25 +78,35 @@
         <tbody>
           @if (isLoadingSurveys) {
             <tr>
-              <td class="empty-state" colspan="6">Cargando encuestas...</td>
+              <td class="empty-state" colspan="7">Cargando encuestas...</td>
             </tr>
           }
           @if (!isLoadingSurveys && listError) {
             <tr>
-              <td class="empty-state" colspan="6">{{ listError }}</td>
+              <td class="empty-state" colspan="7">{{ listError }}</td>
             </tr>
           }
           @if (!isLoadingSurveys && !listError && surveys.length === 0) {
             <tr>
-              <td class="empty-state" colspan="6">No hay encuestas</td>
+              <td class="empty-state" colspan="7">No hay encuestas</td>
             </tr>
           }
-          @for (survey of surveys; track survey.idEncuesta || survey.id_encuesta || survey.titulo) {
+          @if (!isLoadingSurveys && !listError && surveys.length > 0 && filteredSurveys.length === 0) {
+            <tr>
+              <td class="empty-state" colspan="7">No hay encuestas con este filtro</td>
+            </tr>
+          }
+          @for (survey of filteredSurveys; track survey.idEncuesta || survey.id_encuesta || survey.titulo) {
             <tr>
               <td>{{ survey.titulo }}</td>
               <td>{{ getSurveyStatusLabel(survey) }}</td>
               <td>{{ survey.questions.length }}</td>
-              <td>0</td>
+              <td>{{ getAssignedResponsesCount(survey) }}</td>
+              <td>
+                <span class="response-count" [class.has-responses]="getCompletedResponsesCount(survey) > 0">
+                  {{ getCompletedResponsesCount(survey) }}
+                </span>
+              </td>
               <td>{{ survey.fechaCreacion || survey.fecha_creacion || '-' }}</td>
               <td>
                 <button class="table-action-button" type="button" (click)="selectSurveyForQuestions(survey)">

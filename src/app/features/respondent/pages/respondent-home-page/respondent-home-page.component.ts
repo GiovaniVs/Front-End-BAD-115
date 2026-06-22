@@ -1,5 +1,5 @@
 import { isPlatformBrowser } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 
@@ -16,21 +16,26 @@ interface AssignedSurvey {
   token?: string;
 }
 
+type RespondentSurveyFilter = 'TODAS' | 'PENDIENTES' | 'COMPLETADAS';
+
 @Component({
   selector: 'app-respondent-home-page',
   imports: [RouterLink],
   templateUrl: './respondent-home-page.component.html',
   styleUrl: './respondent-home-page.component.css'
 })
-export class RespondentHomePageComponent implements OnInit {
+export class RespondentHomePageComponent implements OnInit, OnDestroy {
   private readonly surveyService = inject(SurveyService);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
+  private refreshIntervalId: number | undefined;
+  private readonly refreshOnFocus = () => this.loadAssignedSurveys(true);
 
   readonly surveys: AssignedSurvey[] = [];
   isLoading = false;
   loadError = '';
+  surveyFilter: RespondentSurveyFilter = 'TODAS';
 
   get completedSurveys(): AssignedSurvey[] {
     return this.surveys.filter((survey) => survey.status === 'Completada');
@@ -40,16 +45,45 @@ export class RespondentHomePageComponent implements OnInit {
     return this.surveys.filter((survey) => survey.status === 'Pendiente');
   }
 
+  get filteredSurveys(): AssignedSurvey[] {
+    if (this.surveyFilter === 'PENDIENTES') {
+      return this.pendingSurveys;
+    }
+
+    if (this.surveyFilter === 'COMPLETADAS') {
+      return this.completedSurveys;
+    }
+
+    return this.surveys;
+  }
+
   ngOnInit(): void {
     if (!this.isBrowser) {
       return;
     }
 
     this.loadAssignedSurveys();
+    this.refreshIntervalId = window.setInterval(() => this.loadAssignedSurveys(true), 15000);
+    document.addEventListener('visibilitychange', this.refreshOnFocus);
+    window.addEventListener('focus', this.refreshOnFocus);
   }
 
-  loadAssignedSurveys(): void {
-    this.isLoading = true;
+  ngOnDestroy(): void {
+    if (this.refreshIntervalId !== undefined) {
+      window.clearInterval(this.refreshIntervalId);
+      this.refreshIntervalId = undefined;
+    }
+
+    if (this.isBrowser) {
+      document.removeEventListener('visibilitychange', this.refreshOnFocus);
+      window.removeEventListener('focus', this.refreshOnFocus);
+    }
+  }
+
+  loadAssignedSurveys(silent = false): void {
+    if (!silent) {
+      this.isLoading = true;
+    }
     this.loadError = '';
 
     const respondent = this.getRespondentIdentity();
@@ -58,7 +92,9 @@ export class RespondentHomePageComponent implements OnInit {
       .getAssignedSurveysForRespondent(respondent.id, respondent.email)
       .pipe(
         finalize(() => {
-          this.isLoading = false;
+          if (!silent) {
+            this.isLoading = false;
+          }
           this.changeDetectorRef.detectChanges();
         })
       )
@@ -67,9 +103,15 @@ export class RespondentHomePageComponent implements OnInit {
           this.surveys.splice(0, this.surveys.length, ...surveys.map((survey) => this.toAssignedSurvey(survey)));
         },
         error: () => {
-          this.loadError = 'No se pudieron cargar tus encuestas asignadas.';
+          if (!silent) {
+            this.loadError = 'No se pudieron cargar tus encuestas asignadas.';
+          }
         }
       });
+  }
+
+  setSurveyFilter(filter: RespondentSurveyFilter): void {
+    this.surveyFilter = filter;
   }
 
   private toAssignedSurvey(survey: SurveyAssignment): AssignedSurvey {
@@ -90,7 +132,7 @@ export class RespondentHomePageComponent implements OnInit {
 
   private isCompletedSurvey(survey: SurveyAssignment): boolean {
     const status = this.normalizeText(survey.estadoRespuesta ?? survey.estado_respuesta ?? survey.estado);
-    return survey.respondida === true || survey.completada === true || status === 'respondida' || status === 'completada' || status === 'completado';
+    return survey.respondida === true || survey.completada === true || status === 'c' || status === 'respondida' || status === 'completada' || status === 'completado';
   }
 
   private getRespondentIdentity(): { id?: number; email?: string } {

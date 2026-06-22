@@ -114,13 +114,19 @@ export class SurveyService {
       return of(this.getLocalAssignments(idEncuestado, correo));
     }
 
-    return this.http.get<SurveyAssignment[] | SurveyAssignmentResponseWrapper>(`/api/encuestados/${idEncuestado}/encuestas-pendientes`, {
+    return this.http.get<SurveyAssignment[] | SurveyAssignmentResponseWrapper>(`/api/encuestados/${idEncuestado}/encuestas-asignadas`, {
       headers: token ? this.getAuthHeaders(token) : undefined,
       withCredentials: true
     }).pipe(
       map((response) => this.mergeAssignments(this.normalizeAssignmentsResponse(response), idEncuestado, correo)),
       timeout(15000),
-      catchError(() => of(this.getLocalAssignments(idEncuestado, correo)))
+      catchError(() => this.http.get<SurveyAssignment[] | SurveyAssignmentResponseWrapper>(`/api/encuestados/${idEncuestado}/encuestas-pendientes`, {
+        headers: token ? this.getAuthHeaders(token) : undefined,
+        withCredentials: true
+      }).pipe(
+        map((response) => this.mergeAssignments(this.normalizeAssignmentsResponse(response), idEncuestado, correo)),
+        catchError(() => of(this.getLocalAssignments(idEncuestado, correo)))
+      ))
     );
   }
 

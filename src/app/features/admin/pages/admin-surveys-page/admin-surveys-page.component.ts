@@ -1,6 +1,6 @@
 import { isPlatformBrowser } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectorRef, Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
 
@@ -28,6 +28,8 @@ interface RespondentOption {
   email?: string;
 }
 
+type SurveyStatusFilter = 'TODAS' | 'BORRADOR' | 'PUBLICADA' | 'FINALIZADA' | 'INACTIVA' | 'CONTESTADAS';
+
 const QUESTION_TYPE_LABELS: Record<SurveyQuestionType, string> = {
   CERRADA: 'Seleccion Unica / Multiple',
   ABIERTA: 'Respuesta de Texto Libre',
@@ -41,7 +43,7 @@ const QUESTION_TYPE_LABELS: Record<SurveyQuestionType, string> = {
   templateUrl: './admin-surveys-page.component.html',
   styleUrl: './admin-surveys-page.component.css'
 })
-export class AdminSurveysPageComponent implements OnInit {
+export class AdminSurveysPageComponent implements OnInit, OnDestroy {
   private readonly formBuilder = inject(FormBuilder);
   private readonly surveyService = inject(SurveyService);
   private readonly authService = inject(AuthService);
@@ -49,6 +51,8 @@ export class AdminSurveysPageComponent implements OnInit {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
   private saveRequestTimeoutId: number | undefined;
+  private refreshIntervalId: number | undefined;
+  private readonly refreshOnFocus = () => this.loadSurveys(true);
 
   readonly questionTypes: { value: SurveyQuestionType; label: string }[] = [
     { value: 'CERRADA', label: QUESTION_TYPE_LABELS.CERRADA },
@@ -73,6 +77,7 @@ export class AdminSurveysPageComponent implements OnInit {
   listError = '';
   assignmentError = '';
   assignmentSuccess = '';
+  surveyStatusFilter: SurveyStatusFilter = 'TODAS';
 
   readonly surveyForm = this.formBuilder.nonNullable.group({
     titulo: ['', [Validators.required, Validators.minLength(3)]],
@@ -101,6 +106,18 @@ export class AdminSurveysPageComponent implements OnInit {
     return this.surveys.find((survey) => this.getSurveyId(survey) === this.selectedSurveyId);
   }
 
+  get filteredSurveys(): SurveyDraft[] {
+    if (this.surveyStatusFilter === 'TODAS') {
+      return this.surveys;
+    }
+
+    if (this.surveyStatusFilter === 'CONTESTADAS') {
+      return this.surveys.filter((survey) => this.getCompletedResponsesCount(survey) > 0);
+    }
+
+    return this.surveys.filter((survey) => this.getSurveyStatusFilterValue(survey) === this.surveyStatusFilter);
+  }
+
   ngOnInit(): void {
     if (!this.isBrowser) {
       return;
@@ -108,17 +125,38 @@ export class AdminSurveysPageComponent implements OnInit {
 
     this.loadSurveys();
     this.loadRespondents();
+    this.refreshIntervalId = window.setInterval(() => this.loadSurveys(true), 15000);
+    document.addEventListener('visibilitychange', this.refreshOnFocus);
+    window.addEventListener('focus', this.refreshOnFocus);
   }
 
-  loadSurveys(): void {
-    this.isLoadingSurveys = true;
+  ngOnDestroy(): void {
+    this.clearSaveRequestTimeout();
+
+    if (this.refreshIntervalId !== undefined) {
+      window.clearInterval(this.refreshIntervalId);
+      this.refreshIntervalId = undefined;
+    }
+
+    if (this.isBrowser) {
+      document.removeEventListener('visibilitychange', this.refreshOnFocus);
+      window.removeEventListener('focus', this.refreshOnFocus);
+    }
+  }
+
+  loadSurveys(silent = false): void {
+    if (!silent) {
+      this.isLoadingSurveys = true;
+    }
     this.listError = '';
 
     this.surveyService
       .getSurveys()
       .pipe(
         finalize(() => {
-          this.isLoadingSurveys = false;
+          if (!silent) {
+            this.isLoadingSurveys = false;
+          }
           this.changeDetectorRef.detectChanges();
         })
       )
@@ -132,7 +170,9 @@ export class AdminSurveysPageComponent implements OnInit {
           this.surveys.splice(0, this.surveys.length, ...designerSurveys.map((survey) => this.toSurveyDraft(survey)));
         },
         error: () => {
-          this.listError = 'No se pudieron cargar las encuestas del disenador.';
+          if (!silent) {
+            this.listError = 'No se pudieron cargar las encuestas del disenador.';
+          }
         }
       });
   }
@@ -698,6 +738,36 @@ export class AdminSurveysPageComponent implements OnInit {
   isSurveyPublished(survey: Survey): boolean {
     const status = this.normalizeText(survey.estado);
     return status === 'p' || status === 'publicada';
+  }
+
+  getAssignedResponsesCount(survey: Survey): number {
+    return survey.totalAsignadas ?? survey.total_asignadas ?? 0;
+  }
+
+  getCompletedResponsesCount(survey: Survey): number {
+    return survey.totalCompletadas ?? survey.total_completadas ?? 0;
+  }
+
+  setSurveyStatusFilter(status: SurveyStatusFilter): void {
+    this.surveyStatusFilter = status;
+  }
+
+  private getSurveyStatusFilterValue(survey: Survey): SurveyStatusFilter {
+    const status = this.normalizeText(survey.estado);
+
+    if (status === 'p' || status === 'publicada') {
+      return 'PUBLICADA';
+    }
+
+    if (status === 'f' || status === 'finalizada') {
+      return 'FINALIZADA';
+    }
+
+    if (status === 'i' || status === 'inactiva') {
+      return 'INACTIVA';
+    }
+
+    return 'BORRADOR';
   }
 
   private toRespondentOption(user: AuthUserAccount): RespondentOption | undefined {
