@@ -20,6 +20,7 @@ interface SurveyDraft extends Survey {
   questions: SurveyQuestion[];
   saved?: boolean;
   questionsLoaded?: boolean;
+  isLocalDraft?: boolean;
 }
 
 interface RespondentOption {
@@ -171,7 +172,8 @@ export class AdminSurveysPageComponent implements OnInit, OnDestroy {
             ? surveys.filter((survey) => this.normalizeText(survey.creadorPor) === currentUser)
             : [];
 
-          this.surveys.splice(0, this.surveys.length, ...designerSurveys.map((survey) => this.toSurveyDraft(survey)));
+          const localDrafts = this.surveys.filter((survey) => survey.isLocalDraft);
+          this.surveys.splice(0, this.surveys.length, ...localDrafts, ...designerSurveys.map((survey) => this.toSurveyDraft(survey)));
         },
         error: () => {
           if (!silent) {
@@ -220,7 +222,7 @@ export class AdminSurveysPageComponent implements OnInit, OnDestroy {
     this.saveError = '';
 
     const idEncuesta = Date.now();
-    this.surveys.unshift({
+    const surveyDraft: SurveyDraft = {
       idEncuesta,
       titulo,
       objetivo: objetivo || undefined,
@@ -229,9 +231,13 @@ export class AdminSurveysPageComponent implements OnInit, OnDestroy {
       fechaCreacion: new Date().toLocaleDateString(),
       questions: [],
       saved: false,
-      questionsLoaded: true
-    });
+      questionsLoaded: true,
+      isLocalDraft: true
+    };
+
+    this.surveys.unshift(surveyDraft);
     this.selectedSurveyId = idEncuesta;
+    this.patchEditSurveyForm(surveyDraft);
     this.surveyForm.reset();
     this.showCreateForm = false;
     this.isSaving = false;
@@ -463,10 +469,19 @@ export class AdminSurveysPageComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (createdSurvey) => {
-          survey.idEncuesta = createdSurvey.idEncuesta ?? createdSurvey.id_encuesta ?? survey.idEncuesta;
+          const persistedSurveyId = createdSurvey.idEncuesta ?? createdSurvey.id_encuesta ?? surveyId;
+          if (!persistedSurveyId) {
+            this.saveError = 'La encuesta se guardo, pero el backend no devolvio el ID. Recarga la lista antes de asignar o publicar.';
+            return;
+          }
+
+          survey.idEncuesta = persistedSurveyId;
           survey.estado = createdSurvey.estado ?? survey.estado ?? 'Guardada';
           survey.fechaCreacion = createdSurvey.fechaCreacion ?? createdSurvey.fecha_creacion ?? survey.fechaCreacion;
           survey.saved = true;
+          survey.questionsLoaded = true;
+          survey.isLocalDraft = false;
+          this.selectedSurveyId = persistedSurveyId ?? this.selectedSurveyId;
           this.saveSuccess = createdSurvey.mensaje ?? (surveyId ? 'Encuesta actualizada correctamente.' : 'Encuesta guardada correctamente.');
           this.changeDetectorRef.detectChanges();
         },
@@ -684,7 +699,8 @@ export class AdminSurveysPageComponent implements OnInit, OnDestroy {
       objetivo: survey.objetivo ?? survey.objective,
       questions: [],
       saved: true,
-      questionsLoaded: false
+      questionsLoaded: false,
+      isLocalDraft: false
     };
   }
 
@@ -770,6 +786,30 @@ export class AdminSurveysPageComponent implements OnInit, OnDestroy {
     this.surveyStatusFilter = status;
   }
 
+  getSurveyEditorTitle(survey: SurveyDraft): string {
+    return this.isPersistedSurvey(survey) ? 'Editar encuesta' : 'Crear encuesta';
+  }
+
+  getSurveyActionLabel(survey: SurveyDraft): string {
+    return this.isPersistedSurvey(survey) ? 'Editar' : 'Continuar';
+  }
+
+  getSaveButtonLabel(survey: SurveyDraft): string {
+    if (this.isSavingSurvey) {
+      return this.isPersistedSurvey(survey) ? 'Guardando cambios...' : 'Guardando encuesta...';
+    }
+
+    if (survey.saved) {
+      return 'Encuesta guardada';
+    }
+
+    return this.isPersistedSurvey(survey) ? 'Guardar cambios' : 'Guardar encuesta';
+  }
+
+  shouldShowSurveyDetailsForm(survey: SurveyDraft): boolean {
+    return this.isPersistedSurvey(survey);
+  }
+
   private getSurveyStatusFilterValue(survey: Survey): SurveyStatusFilter {
     const status = this.normalizeText(survey.estado);
 
@@ -792,6 +832,10 @@ export class AdminSurveysPageComponent implements OnInit, OnDestroy {
     return this.surveys.some((survey) => survey.saved === false);
   }
 
+  private isPersistedSurvey(survey: SurveyDraft): boolean {
+    return !!this.getPersistedSurveyId(survey);
+  }
+
   private toRespondentOption(user: AuthUserAccount): RespondentOption | undefined {
     const id = user.idEncuestado ?? user.id_encuestado ?? user.idUsuario ?? user.id_usuario;
     if (!id) {
@@ -809,6 +853,10 @@ export class AdminSurveysPageComponent implements OnInit, OnDestroy {
   }
 
   private getPersistedSurveyId(survey: SurveyDraft): number | undefined {
+    if (survey.isLocalDraft) {
+      return undefined;
+    }
+
     const surveyId = this.getSurveyId(survey);
     return survey.saved || survey.questionsLoaded === false || survey.creadorPor ? surveyId : undefined;
   }

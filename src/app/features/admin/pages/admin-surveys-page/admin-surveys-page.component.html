@@ -41,7 +41,7 @@
         }
 
         <button class="save-survey-button" type="submit" [disabled]="isSaving">
-          {{ isSaving ? 'Guardando...' : 'Continuar a preguntas' }}
+          {{ isSaving ? 'Preparando...' : 'Crear encuesta y agregar preguntas' }}
         </button>
       </form>
     </article>
@@ -110,7 +110,7 @@
               <td>{{ survey.fechaCreacion || survey.fecha_creacion || '-' }}</td>
               <td>
                 <button class="table-action-button" type="button" (click)="selectSurveyForQuestions(survey)">
-                  Editar
+                  {{ getSurveyActionLabel(survey) }}
                 </button>
               </td>
             </tr>
@@ -125,7 +125,7 @@
       <div class="questions-header">
         <div>
           <p class="survey-kicker">Constructor de preguntas</p>
-          <h2>Editar encuesta</h2>
+          <h2>{{ getSurveyEditorTitle(survey) }}</h2>
         </div>
         <span class="question-count">{{ survey.questions.length }} preguntas</span>
       </div>
@@ -134,28 +134,30 @@
         <p class="helper-text">Cargando preguntas de la encuesta...</p>
       }
 
-      <form class="survey-form-card survey-form" [formGroup]="editSurveyForm" (ngSubmit)="applySurveyDetails()" (input)="markSelectedSurveyUnsaved()">
-        <h2>Datos de la encuesta</h2>
+      @if (shouldShowSurveyDetailsForm(survey)) {
+        <form class="survey-form-card survey-form" [formGroup]="editSurveyForm" (ngSubmit)="applySurveyDetails()" (input)="markSelectedSurveyUnsaved()">
+          <h2>Datos de la encuesta</h2>
 
-        <label for="edit-survey-title">Titulo</label>
-        <input id="edit-survey-title" formControlName="titulo" type="text" placeholder="Titulo de la encuesta" />
-        @if (editSurveyForm.controls.titulo.touched && editSurveyForm.controls.titulo.invalid) {
-          <small class="error-text">Ingresa un titulo de al menos 3 caracteres.</small>
-        }
+          <label for="edit-survey-title">Titulo</label>
+          <input id="edit-survey-title" formControlName="titulo" type="text" placeholder="Titulo de la encuesta" />
+          @if (editSurveyForm.controls.titulo.touched && editSurveyForm.controls.titulo.invalid) {
+            <small class="error-text">Ingresa un titulo de al menos 3 caracteres.</small>
+          }
 
-        <label for="edit-survey-objective">Objetivo</label>
-        <input id="edit-survey-objective" formControlName="objetivo" type="text" placeholder="Objetivo de la encuesta" />
+          <label for="edit-survey-objective">Objetivo</label>
+          <input id="edit-survey-objective" formControlName="objetivo" type="text" placeholder="Objetivo de la encuesta" />
 
-        <label for="edit-survey-instructions">Instrucciones</label>
-        <textarea
-          id="edit-survey-instructions"
-          formControlName="instrucciones"
-          rows="4"
-          placeholder="Indicaciones para quienes responderan"
-        ></textarea>
+          <label for="edit-survey-instructions">Instrucciones</label>
+          <textarea
+            id="edit-survey-instructions"
+            formControlName="instrucciones"
+            rows="4"
+            placeholder="Indicaciones para quienes responderan"
+          ></textarea>
 
-        <button class="save-survey-button" type="submit">Aplicar cambios</button>
-      </form>
+          <button class="save-survey-button" type="submit">Aplicar datos</button>
+        </form>
+      }
 
       <form class="assignment-card" [formGroup]="assignmentForm" (ngSubmit)="assignSelectedSurvey()">
         <div>
@@ -312,7 +314,7 @@
         <small class="success-text">{{ saveSuccess }}</small>
       }
       <button class="save-survey-button" type="button" [disabled]="isSavingSurvey || survey.saved" (click)="saveSelectedSurvey()">
-        {{ survey.saved ? 'Encuesta guardada' : isSavingSurvey ? 'Guardando encuesta...' : 'Guardar cambios' }}
+        {{ getSaveButtonLabel(survey) }}
       </button>
       <button class="save-survey-button" type="button" [disabled]="isPublishingSurvey || !survey.saved || isSurveyPublished(survey)" (click)="publishSelectedSurvey()">
         {{ isSurveyPublished(survey) ? 'Encuesta publicada' : isPublishingSurvey ? 'Publicando...' : 'Publicar encuesta' }}

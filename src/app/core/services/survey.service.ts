@@ -28,7 +28,6 @@ export class SurveyService {
 
     return this.http.post(this.baseUrl, payload, {
       headers: token ? this.getAuthHeaders(token) : undefined,
-      responseType: 'text',
       withCredentials: true
     }).pipe(
       map((response) => this.normalizeCreateSurveyResponse(response, payload)),
@@ -59,7 +58,6 @@ export class SurveyService {
 
     return this.http.put(`${this.baseUrl}/${idEncuesta}`, payload, {
       headers: token ? this.getAuthHeaders(token) : undefined,
-      responseType: 'text',
       withCredentials: true
     }).pipe(
       map((response) => this.normalizeCreateSurveyResponse(response, payload)),
@@ -172,19 +170,19 @@ export class SurveyService {
     return new HttpHeaders({ Authorization: authorization });
   }
 
-  private normalizeCreateSurveyResponse(response: string, payload: CreateSurveyRequest): Survey {
+  private normalizeCreateSurveyResponse(response: unknown, payload: CreateSurveyRequest): Survey {
     if (!response) {
       return this.createFallbackSurvey(payload);
     }
 
-    try {
-      return JSON.parse(response) as Survey;
-    } catch {
+    if (typeof response === 'string') {
       return {
         ...this.createFallbackSurvey(payload),
         mensaje: response
       };
     }
+
+    return response as Survey;
   }
 
   private createFallbackSurvey(payload: CreateSurveyRequest): Survey {
