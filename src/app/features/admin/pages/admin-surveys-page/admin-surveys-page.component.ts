@@ -18,6 +18,7 @@ interface SurveyQuestion extends CreateSurveyQuestionRequest {
 interface SurveyDraft extends Survey {
   questions: SurveyQuestion[];
   saved?: boolean;
+  questionsLoaded?: boolean;
 }
 
 const QUESTION_TYPE_LABELS: Record<SurveyQuestionType, string> = {
@@ -49,15 +50,23 @@ export class AdminSurveysPageComponent implements OnInit {
   ];
   readonly surveys: SurveyDraft[] = [];
   selectedSurveyId: number | null = null;
+  editingQuestionId: number | null = null;
   showCreateForm = false;
   isSaving = false;
   isSavingSurvey = false;
   isLoadingSurveys = false;
+  isLoadingSurveyQuestions = false;
   saveError = '';
   saveSuccess = '';
   listError = '';
 
   readonly surveyForm = this.formBuilder.nonNullable.group({
+    titulo: ['', [Validators.required, Validators.minLength(3)]],
+    objetivo: [''],
+    instrucciones: ['']
+  });
+
+  readonly editSurveyForm = this.formBuilder.nonNullable.group({
     titulo: ['', [Validators.required, Validators.minLength(3)]],
     objetivo: [''],
     instrucciones: ['']
@@ -71,7 +80,7 @@ export class AdminSurveysPageComponent implements OnInit {
   });
 
   get selectedSurvey(): SurveyDraft | undefined {
-    return this.surveys.find((survey) => survey.idEncuesta === this.selectedSurveyId);
+    return this.surveys.find((survey) => this.getSurveyId(survey) === this.selectedSurveyId);
   }
 
   ngOnInit(): void {
@@ -134,7 +143,8 @@ export class AdminSurveysPageComponent implements OnInit {
       estado: 'Borrador',
       fechaCreacion: new Date().toLocaleDateString(),
       questions: [],
-      saved: false
+      saved: false,
+      questionsLoaded: true
     });
     this.selectedSurveyId = idEncuesta;
     this.surveyForm.reset();
@@ -143,7 +153,9 @@ export class AdminSurveysPageComponent implements OnInit {
   }
 
   selectSurveyForQuestions(survey: SurveyDraft): void {
-    this.selectedSurveyId = survey.idEncuesta ?? null;
+    this.selectedSurveyId = this.getSurveyId(survey) ?? null;
+    this.editingQuestionId = null;
+    this.patchEditSurveyForm(survey);
     this.questionForm.reset({
       enunciado: '',
       tipoPregunta: 'CERRADA',
@@ -152,6 +164,37 @@ export class AdminSurveysPageComponent implements OnInit {
     });
     this.saveError = '';
     this.saveSuccess = '';
+
+    const surveyId = this.getSurveyId(survey);
+    if (!surveyId || survey.questionsLoaded) {
+      return;
+    }
+
+    this.isLoadingSurveyQuestions = true;
+    this.surveyService
+      .getSurveyDetail(surveyId)
+      .pipe(
+        finalize(() => {
+          this.isLoadingSurveyQuestions = false;
+          this.changeDetectorRef.detectChanges();
+        })
+      )
+      .subscribe({
+        next: (detail) => {
+          survey.titulo = detail.titulo ?? survey.titulo;
+          survey.objetivo = detail.objetivo ?? detail.objective ?? survey.objetivo;
+          survey.instrucciones = detail.instrucciones ?? survey.instrucciones;
+          survey.estado = detail.estado ?? survey.estado;
+          survey.questions = this.mapDetailQuestions(detail);
+          survey.questionsLoaded = true;
+          this.patchEditSurveyForm(survey);
+          this.changeDetectorRef.detectChanges();
+        },
+        error: () => {
+          this.saveError = 'No se pudieron cargar las preguntas de la encuesta.';
+          this.changeDetectorRef.detectChanges();
+        }
+      });
   }
 
   addQuestion(): void {
@@ -174,19 +217,31 @@ export class AdminSurveysPageComponent implements OnInit {
       return;
     }
 
-    survey.questions.push({
-      id: Date.now(),
+    const questionId = this.editingQuestionId ?? Date.now();
+    const question: SurveyQuestion = {
+      id: questionId,
       enunciado,
       tipoPregunta,
-      orden: survey.questions.length + 1,
+      orden: this.editingQuestionId ? survey.questions.find((item) => item.id === this.editingQuestionId)?.orden ?? survey.questions.length + 1 : survey.questions.length + 1,
       esObligatoria,
       opciones: parsedOptions.map((option) => ({
         textoOpcion: option,
         esMixta: this.isMixedOption(option)
       }))
-    });
+    };
+
+    if (this.editingQuestionId) {
+      const questionIndex = survey.questions.findIndex((item) => item.id === this.editingQuestionId);
+      if (questionIndex >= 0) {
+        survey.questions[questionIndex] = question;
+      }
+    } else {
+      survey.questions.push(question);
+    }
+
     survey.saved = false;
     survey.estado = 'Borrador';
+    this.editingQuestionId = null;
 
     this.questionForm.reset({
       enunciado: '',
@@ -217,9 +272,64 @@ export class AdminSurveysPageComponent implements OnInit {
     return QUESTION_TYPE_LABELS[type];
   }
 
+  applySurveyDetails(): void {
+    const survey = this.selectedSurvey;
+    if (!survey) {
+      return;
+    }
+
+    if (this.editSurveyForm.invalid) {
+      this.editSurveyForm.markAllAsTouched();
+      return;
+    }
+
+    const { titulo, objetivo, instrucciones } = this.editSurveyForm.getRawValue();
+    survey.titulo = titulo;
+    survey.objetivo = objetivo || undefined;
+    survey.instrucciones = instrucciones || undefined;
+    survey.saved = false;
+    this.saveSuccess = '';
+  }
+
+  markSelectedSurveyUnsaved(): void {
+    const survey = this.selectedSurvey;
+    if (!survey) {
+      return;
+    }
+
+    survey.saved = false;
+    this.saveSuccess = '';
+  }
+
+  editQuestion(question: SurveyQuestion): void {
+    this.editingQuestionId = question.id;
+    this.questionForm.reset({
+      enunciado: question.enunciado,
+      tipoPregunta: question.tipoPregunta,
+      esObligatoria: question.esObligatoria,
+      opciones: question.opciones.map((option) => option.textoOpcion).join('\n')
+    });
+    this.saveError = '';
+    this.saveSuccess = '';
+  }
+
+  cancelQuestionEdit(): void {
+    this.editingQuestionId = null;
+    this.questionForm.reset({
+      enunciado: '',
+      tipoPregunta: 'CERRADA',
+      esObligatoria: true,
+      opciones: ''
+    });
+  }
+
   saveSelectedSurvey(): void {
     const survey = this.selectedSurvey;
     if (!survey || this.isSavingSurvey) {
+      return;
+    }
+
+    if (!this.applySurveyDetailsBeforeSave(survey)) {
       return;
     }
 
@@ -243,17 +353,23 @@ export class AdminSurveysPageComponent implements OnInit {
       }
 
       this.finishSavingSurvey();
-      this.saveError = 'El backend no respondio al guardar. Revisa la consola de Spring Boot y la peticion POST /api/encuestas en Network.';
+      this.saveError = 'El backend no respondio al guardar. Revisa la consola de Spring Boot y la peticion de encuestas en Network.';
       this.changeDetectorRef.detectChanges();
     }, 10000);
 
-    this.surveyService
-      .createSurvey({
-        titulo: survey.titulo,
-        objetivo: survey.objetivo,
-        instrucciones: survey.instrucciones,
-        preguntas: survey.questions.map(({ id: _id, ...question }) => question)
-      })
+    const surveyId = this.getPersistedSurveyId(survey);
+    const payload = {
+      titulo: survey.titulo,
+      objetivo: survey.objetivo,
+      instrucciones: survey.instrucciones,
+      preguntas: survey.questions.map(({ id: _id, ...question }) => question)
+    };
+
+    const request = surveyId
+      ? this.surveyService.updateSurvey(surveyId, payload)
+      : this.surveyService.createSurvey(payload);
+
+    request
       .pipe(
         finalize(() => {
           this.clearSaveRequestTimeout();
@@ -263,10 +379,10 @@ export class AdminSurveysPageComponent implements OnInit {
       .subscribe({
         next: (createdSurvey) => {
           survey.idEncuesta = createdSurvey.idEncuesta ?? createdSurvey.id_encuesta ?? survey.idEncuesta;
-          survey.estado = createdSurvey.estado ?? 'Guardada';
+          survey.estado = createdSurvey.estado ?? survey.estado ?? 'Guardada';
           survey.fechaCreacion = createdSurvey.fechaCreacion ?? createdSurvey.fecha_creacion ?? survey.fechaCreacion;
           survey.saved = true;
-          this.saveSuccess = createdSurvey.mensaje ?? 'Encuesta guardada correctamente.';
+          this.saveSuccess = createdSurvey.mensaje ?? (surveyId ? 'Encuesta actualizada correctamente.' : 'Encuesta guardada correctamente.');
           this.changeDetectorRef.detectChanges();
         },
         error: (error: unknown) => {
@@ -352,8 +468,61 @@ export class AdminSurveysPageComponent implements OnInit {
       ...survey,
       objetivo: survey.objetivo ?? survey.objective,
       questions: [],
-      saved: true
+      saved: true,
+      questionsLoaded: false
     };
+  }
+
+  private patchEditSurveyForm(survey: Survey): void {
+    this.editSurveyForm.reset({
+      titulo: survey.titulo,
+      objetivo: survey.objetivo ?? survey.objective ?? '',
+      instrucciones: survey.instrucciones ?? ''
+    });
+  }
+
+  private applySurveyDetailsBeforeSave(survey: SurveyDraft): boolean {
+    if (this.editSurveyForm.invalid) {
+      this.editSurveyForm.markAllAsTouched();
+      this.saveError = 'Revisa el titulo de la encuesta antes de guardar.';
+      return false;
+    }
+
+    const { titulo, objetivo, instrucciones } = this.editSurveyForm.getRawValue();
+    survey.titulo = titulo;
+    survey.objetivo = objetivo || undefined;
+    survey.instrucciones = instrucciones || undefined;
+    return true;
+  }
+
+  private mapDetailQuestions(survey: Survey): SurveyQuestion[] {
+    return (survey.preguntas || [])
+      .map((question) => ({
+        id: question.idPregunta ?? question.orden ?? Date.now(),
+        enunciado: question.enunciado,
+        esObligatoria: question.esObligatoria,
+        orden: question.orden,
+        tipoPregunta: this.toQuestionType(question.tipoPregunta),
+        opciones: (question.opciones || []).map((option) => ({
+          textoOpcion: option.textoOpcion,
+          esMixta: option.esMixta
+        }))
+      }))
+      .sort((first, second) => first.orden - second.orden);
+  }
+
+  private toQuestionType(type: string): SurveyQuestionType {
+    const normalizedType = type?.toUpperCase() as SurveyQuestionType;
+    return this.questionTypes.some((questionType) => questionType.value === normalizedType) ? normalizedType : 'CERRADA';
+  }
+
+  private getSurveyId(survey: Survey): number | undefined {
+    return survey.idEncuesta ?? survey.id_encuesta;
+  }
+
+  private getPersistedSurveyId(survey: SurveyDraft): number | undefined {
+    const surveyId = this.getSurveyId(survey);
+    return survey.saved || survey.questionsLoaded === false || survey.creadorPor ? surveyId : undefined;
   }
 
   private normalizeText(value: string | undefined | null): string {

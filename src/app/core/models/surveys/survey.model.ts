@@ -1,3 +1,18 @@
+export interface SurveyOptionDetail {
+  idOpcion?: number;
+  textoOpcion: string;
+  esMixta: boolean;
+}
+
+export interface SurveyQuestionDetail {
+  idPregunta?: number;
+  enunciado: string;
+  esObligatoria: boolean;
+  orden: number;
+  tipoPregunta: string;
+  opciones: SurveyOptionDetail[];
+}
+
 export interface Survey {
   mensaje?: string;
   idEncuesta?: number;
@@ -10,4 +25,5 @@ export interface Survey {
   fechaCreacion?: string;
   fecha_creacion?: string;
   creadorPor?: string;
+  preguntas?: SurveyQuestionDetail[];
 }

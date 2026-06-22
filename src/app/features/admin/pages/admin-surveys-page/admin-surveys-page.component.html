@@ -85,7 +85,7 @@
               <td>{{ survey.fechaCreacion || survey.fecha_creacion || '-' }}</td>
               <td>
                 <button class="table-action-button" type="button" (click)="selectSurveyForQuestions(survey)">
-                  Preguntas
+                  Editar
                 </button>
               </td>
             </tr>
@@ -100,12 +100,41 @@
       <div class="questions-header">
         <div>
           <p class="survey-kicker">Constructor de preguntas</p>
-          <h2>{{ survey.titulo }}</h2>
+          <h2>Editar encuesta</h2>
         </div>
         <span class="question-count">{{ survey.questions.length }} preguntas</span>
       </div>
 
+      @if (isLoadingSurveyQuestions) {
+        <p class="helper-text">Cargando preguntas de la encuesta...</p>
+      }
+
+      <form class="survey-form-card survey-form" [formGroup]="editSurveyForm" (ngSubmit)="applySurveyDetails()" (input)="markSelectedSurveyUnsaved()">
+        <h2>Datos de la encuesta</h2>
+
+        <label for="edit-survey-title">Titulo</label>
+        <input id="edit-survey-title" formControlName="titulo" type="text" placeholder="Titulo de la encuesta" />
+        @if (editSurveyForm.controls.titulo.touched && editSurveyForm.controls.titulo.invalid) {
+          <small class="error-text">Ingresa un titulo de al menos 3 caracteres.</small>
+        }
+
+        <label for="edit-survey-objective">Objetivo</label>
+        <input id="edit-survey-objective" formControlName="objetivo" type="text" placeholder="Objetivo de la encuesta" />
+
+        <label for="edit-survey-instructions">Instrucciones</label>
+        <textarea
+          id="edit-survey-instructions"
+          formControlName="instrucciones"
+          rows="4"
+          placeholder="Indicaciones para quienes responderan"
+        ></textarea>
+
+        <button class="save-survey-button" type="submit">Aplicar cambios</button>
+      </form>
+
       <form class="question-form google-form-card" [formGroup]="questionForm" (ngSubmit)="addQuestion()">
+        <h2>{{ editingQuestionId ? 'Editar pregunta' : 'Agregar pregunta' }}</h2>
+
         <div class="question-top-row">
           <div class="question-title-field">
             <input
@@ -171,7 +200,12 @@
             <input type="checkbox" formControlName="esObligatoria" />
             Obligatoria
           </label>
-          <button class="save-survey-button" type="submit">Agregar pregunta</button>
+          <button class="save-survey-button" type="submit">
+            {{ editingQuestionId ? 'Actualizar pregunta' : 'Agregar pregunta' }}
+          </button>
+          @if (editingQuestionId) {
+            <button class="table-action-button" type="button" (click)="cancelQuestionEdit()">Cancelar edicion</button>
+          }
         </div>
       </form>
 
@@ -185,6 +219,7 @@
             <div>
               <span class="question-number">{{ index + 1 }}</span>
               <strong>{{ question.enunciado }}</strong>
+              <button class="table-action-button" type="button" (click)="editQuestion(question)">Editar</button>
             </div>
             <div class="question-meta">
               <span>{{ questionTypeLabel(question.tipoPregunta) }}</span>
@@ -209,7 +244,7 @@
         <small class="success-text">{{ saveSuccess }}</small>
       }
       <button class="save-survey-button" type="button" [disabled]="isSavingSurvey || survey.saved" (click)="saveSelectedSurvey()">
-        {{ survey.saved ? 'Encuesta guardada' : isSavingSurvey ? 'Guardando encuesta...' : 'Guardar encuesta' }}
+        {{ survey.saved ? 'Encuesta guardada' : isSavingSurvey ? 'Guardando encuesta...' : 'Guardar cambios' }}
       </button>
     </article>
   }

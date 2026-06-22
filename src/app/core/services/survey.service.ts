@@ -33,6 +33,28 @@ export class SurveyService {
     }).pipe(timeout(15000));
   }
 
+  getSurveyDetail(idEncuesta: number): Observable<Survey> {
+    const token = this.getStoredToken();
+
+    return this.http.get<Survey>(`${this.baseUrl}/${idEncuesta}`, {
+      headers: token ? this.getAuthHeaders(token) : undefined,
+      withCredentials: true
+    }).pipe(timeout(15000));
+  }
+
+  updateSurvey(idEncuesta: number, payload: CreateSurveyRequest): Observable<Survey> {
+    const token = this.getStoredToken();
+
+    return this.http.put(`${this.baseUrl}/${idEncuesta}`, payload, {
+      headers: token ? this.getAuthHeaders(token) : undefined,
+      responseType: 'text',
+      withCredentials: true
+    }).pipe(
+      map((response) => this.normalizeCreateSurveyResponse(response, payload)),
+      timeout(15000)
+    );
+  }
+
   private getStoredToken(): string | undefined {
     if (typeof localStorage === 'undefined') {
       return undefined;
