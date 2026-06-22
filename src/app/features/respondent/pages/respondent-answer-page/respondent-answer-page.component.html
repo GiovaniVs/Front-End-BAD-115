@@ -32,7 +32,23 @@
             }
           </div>
 
-          @if (isOptionQuestion(question)) {
+          @if (isScaleQuestion(question)) {
+            <div class="likert-scale" [style.--scale-count]="question.opciones?.length || 5">
+              @for (option of question.opciones; track option.idOpcion || option.textoOpcion) {
+                <label class="likert-option" [class.selected]="answers[question.idPregunta].idOpcion === option.idOpcion">
+                  <input
+                    type="radio"
+                    [name]="'question-' + question.idPregunta"
+                    [value]="option.idOpcion"
+                    [(ngModel)]="answers[question.idPregunta].idOpcion"
+                    [ngModelOptions]="{ standalone: true }"
+                  />
+                  <span class="likert-bubble">{{ getScaleValue(option.textoOpcion) }}</span>
+                  <span class="likert-label">{{ getScaleLabel(option.textoOpcion) }}</span>
+                </label>
+              }
+            </div>
+          } @else if (isOptionQuestion(question)) {
             <div class="options-list">
               @for (option of question.opciones; track option.idOpcion || option.textoOpcion) {
                 <label>

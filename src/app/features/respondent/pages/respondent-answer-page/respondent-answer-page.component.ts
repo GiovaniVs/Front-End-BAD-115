@@ -119,7 +119,23 @@ export class RespondentAnswerPageComponent implements OnInit, OnDestroy {
   }
 
   isOptionQuestion(question: PublicSurveyQuestion): boolean {
-    return this.normalizeText(question.tipoPregunta) !== 'abierta' && (question.opciones?.length || 0) > 0;
+    return !this.isTextQuestion(question) && (question.opciones?.length || 0) > 0;
+  }
+
+  isScaleQuestion(question: PublicSurveyQuestion): boolean {
+    return this.normalizeText(question.tipoPregunta) === 'escala';
+  }
+
+  isTextQuestion(question: PublicSurveyQuestion): boolean {
+    return this.normalizeText(question.tipoPregunta) === 'abierta';
+  }
+
+  getScaleValue(optionText: string): string {
+    return optionText.trim().split(/\s+/)[0] || optionText;
+  }
+
+  getScaleLabel(optionText: string): string {
+    return optionText.replace(/^\s*\d+\s*[-.)]?\s*/, '').trim() || optionText;
   }
 
   private toAnswerPayload(question: PublicSurveyQuestion): PublicSurveyAnswer {

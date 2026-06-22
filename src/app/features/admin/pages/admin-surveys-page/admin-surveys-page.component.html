@@ -202,13 +202,21 @@
             <label for="question-options">
               {{ questionForm.controls.tipoPregunta.value === 'RANKING' ? 'Elementos para ordenar' : 'Opciones de respuesta' }}
             </label>
+            @if (questionForm.controls.tipoPregunta.value === 'ESCALA') {
+              <p class="helper-text">
+                Para preguntas de escala Likert escribe 5 niveles, uno por linea, iniciando con el numero y la etiqueta.
+                Ejemplo: 1 - Muy insatisfecho, 2 - Insatisfecho, 3 - Neutral, 4 - Satisfecho, 5 - Muy satisfecho.
+              </p>
+            }
             <textarea
               id="question-options"
               formControlName="opciones"
               rows="5"
-              placeholder="Elemento 1&#10;Elemento 2&#10;Elemento 3"
+              [placeholder]="questionForm.controls.tipoPregunta.value === 'ESCALA' ? '1 - Muy en desacuerdo&#10;2 - En desacuerdo&#10;3 - Neutral&#10;4 - De acuerdo&#10;5 - Muy de acuerdo' : 'Elemento 1&#10;Elemento 2&#10;Elemento 3'"
             ></textarea>
-            <p class="helper-text">Escribe una opcion por linea.</p>
+            <p class="helper-text">
+              {{ questionForm.controls.tipoPregunta.value === 'ESCALA' ? 'El encuestado vera estas opciones como una escala visual horizontal en escritorio y como botones grandes en movil.' : 'Escribe una opcion por linea.' }}
+            </p>
             @if (questionForm.controls.opciones.touched && questionForm.controls.opciones.invalid) {
               <small class="error-text">Agrega al menos una opcion para este tipo de pregunta.</small>
             }
