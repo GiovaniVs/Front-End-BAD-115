@@ -53,6 +53,13 @@ export const DESIGNER_ROUTES: Routes = [
             (m) => m.DesignerResultsPageComponent
           )
       },
+      {
+        path: 'analisis',
+        loadComponent: () =>
+          import('./pages/designer-analysis-page/designer-analysis-page.component').then(
+            (m) => m.DesignerAnalysisPageComponent
+          )
+      },
       { path: '**', redirectTo: 'encuestas' }
     ]
   }

@@ -1,0 +1,86 @@
+<section class="analysis-page">
+  <header class="analysis-header">
+    <div>
+      <p class="kicker">Analisis de respuestas</p>
+      <h1>Estadisticas por pregunta</h1>
+      <p>Visualiza distribuciones de seleccion, escalas y respuestas abiertas de forma similar a Google Forms.</p>
+    </div>
+  </header>
+
+  <article class="selector-card">
+    <label for="analysis-survey-select">Encuesta</label>
+    <select id="analysis-survey-select" [(ngModel)]="selectedSurveyId" (change)="loadAnalysis()" [disabled]="isLoadingSurveys || surveys.length === 0">
+      @for (survey of surveys; track survey.idEncuesta || survey.id_encuesta || survey.titulo) {
+        <option [ngValue]="survey.idEncuesta || survey.id_encuesta">{{ survey.titulo }}</option>
+      }
+    </select>
+    @if (loadError) {
+      <small class="error-text">{{ loadError }}</small>
+    }
+  </article>
+
+  @if (isLoadingAnalysis) {
+    <article class="state-card">Cargando analisis...</article>
+  }
+
+  @if (!isLoadingAnalysis && analysisError) {
+    <article class="state-card error-text">{{ analysisError }}</article>
+  }
+
+  @if (!isLoadingAnalysis && analysis) {
+    <section class="questions-list">
+      @for (question of analysis.preguntas; track question.idPregunta; let index = $index) {
+        <article class="question-analysis-card">
+          <div class="question-head">
+            <span class="question-number">{{ index + 1 }}</span>
+            <div>
+              <p class="question-type">{{ getQuestionTypeLabel(question) }}</p>
+              <h2>{{ question.enunciado }}</h2>
+              <small>{{ question.totalRespuestas }} respuestas</small>
+            </div>
+          </div>
+
+          @if (isOpenQuestion(question)) {
+            <div class="open-responses">
+              @if (question.respuestasAbiertas.length === 0) {
+                <p class="empty-text">Aun no hay respuestas abiertas.</p>
+              }
+              @for (answer of question.respuestasAbiertas; track answer) {
+                <blockquote>{{ answer }}</blockquote>
+              }
+            </div>
+          } @else if (isScaleQuestion(question)) {
+            <div class="scale-summary">
+              @for (option of question.opciones; track option.idOpcion) {
+                <div class="scale-point" [class.has-data]="option.totalRespuestas > 0">
+                  <span>{{ getScaleValue(option.textoOpcion) }}</span>
+                  <strong>{{ option.totalRespuestas }}</strong>
+                  <small>{{ option.porcentaje }}%</small>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="option-bars">
+              <div class="dominant-card">
+                <span>Respuesta mas frecuente</span>
+                <strong>{{ getDominantOption(question) }}</strong>
+              </div>
+
+              @for (option of question.opciones; track option.idOpcion) {
+                <div class="bar-item">
+                  <div class="bar-label">
+                    <strong>{{ option.textoOpcion }}</strong>
+                    <span>{{ option.totalRespuestas }} ({{ option.porcentaje }}%)</span>
+                  </div>
+                  <div class="bar-track">
+                    <span [style.width.%]="option.porcentaje"></span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </article>
+      }
+    </section>
+  }
+</section>

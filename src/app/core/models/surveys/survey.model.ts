@@ -88,3 +88,26 @@ export interface SurveySummary {
   tasaRespuesta: number;
   tiempoPromedioSegundos: number;
 }
+
+export interface SurveyQuestionOptionAnalysis {
+  idOpcion: number;
+  textoOpcion: string;
+  totalRespuestas: number;
+  porcentaje: number;
+}
+
+export interface SurveyQuestionAnalysis {
+  idPregunta: number;
+  enunciado: string;
+  tipoPregunta: string;
+  orden?: number;
+  totalRespuestas: number;
+  opciones: SurveyQuestionOptionAnalysis[];
+  respuestasAbiertas: string[];
+}
+
+export interface SurveyAnalysis {
+  idEncuesta: number;
+  titulo: string;
+  preguntas: SurveyQuestionAnalysis[];
+}
