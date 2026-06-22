@@ -32,13 +32,13 @@
 
       @if (isRespondentSelected()) {
       <label for="register-nombres">Nombres</label>
-      <input id="register-nombres" formControlName="nombres" type="text" placeholder="Giovanni" />
+      <input id="register-nombres" formControlName="nombres" type="text" placeholder="Digite sus nombres" />
       @if (registerForm.controls.nombres.touched && registerForm.controls.nombres.invalid) {
       <small class="error-text">Ingresa los nombres del encuestado.</small>
       }
 
       <label for="register-apellidos">Apellidos</label>
-      <input id="register-apellidos" formControlName="apellidos" type="text" placeholder="Vasquez" />
+      <input id="register-apellidos" formControlName="apellidos" type="text" placeholder="Digite sus apellidos" />
       @if (registerForm.controls.apellidos.touched && registerForm.controls.apellidos.invalid) {
       <small class="error-text">Ingresa los apellidos del encuestado.</small>
       }
@@ -47,9 +47,7 @@
       <input
         id="register-respondent-email"
         formControlName="correoElectronico"
-        type="email"
-        placeholder="vs21025@ues.edu.sv"
-      />
+        type="email"/>
       @if (registerForm.controls.correoElectronico.touched && registerForm.controls.correoElectronico.errors?.['email']) {
       <small class="error-text">Ingresa un correo valido.</small>
       }
@@ -66,13 +64,13 @@
 
       @if (isAdminSelected()) {
       <label for="register-username">Usuario</label>
-      <input id="register-username" formControlName="username" type="text" placeholder="admin2" />
+      <input id="register-username" formControlName="username" type="text" placeholder="User name" />
       @if (registerForm.controls.username.touched && registerForm.controls.username.invalid) {
       <small class="error-text">Ingresa al menos 3 caracteres.</small>
       }
 
       <label for="register-email">Correo</label>
-      <input id="register-email" formControlName="correo" type="email" placeholder="admin2@test.com" />
+      <input id="register-email" formControlName="correo" type="email" />
       @if (registerForm.controls.correo.touched && registerForm.controls.correo.errors?.['email']) {
       <small class="error-text">Ingresa un correo valido.</small>
       }
