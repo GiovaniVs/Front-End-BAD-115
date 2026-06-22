@@ -35,8 +35,13 @@
       @if (loginForm.controls.password.errors?.['invalidCredentials']) {
       <small class="error-text">Credenciales invalidas.</small>
       }
+      @if (loginError) {
+      <small class="error-text">{{ loginError }}</small>
+      }
 
-      <button type="submit">Entrar al panel</button>
+      <button type="submit" [disabled]="isLoading">
+        {{ isLoading ? 'Validando...' : 'Entrar al panel' }}
+      </button>
     </form>
 
     <p class="switch-text">

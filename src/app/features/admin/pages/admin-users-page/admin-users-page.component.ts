@@ -3,6 +3,7 @@ import { ChangeDetectorRef, Component, inject, OnDestroy, OnInit, PLATFORM_ID } 
 import { NavigationEnd, Router } from '@angular/router';
 import { filter, map, Subscription, timeout } from 'rxjs';
 
+import { environment } from '../../../../../environments/environment';
 import { AuthService, AuthUserAccount, PaginatedUsersResult } from '../../../../core/services/auth.service';
 
 interface ManagedUserGroup {
@@ -91,8 +92,8 @@ export class AdminUsersPageComponent implements OnInit, OnDestroy {
 
   get currentEndpoint(): string {
     return this.currentSection === 'encuestados'
-      ? '/api/encuestados'
-      : '/api/usuarios';
+      ? `${environment.apiUrl}/encuestados`
+      : `${environment.apiUrl}/usuarios`;
   }
 
   get userGroups(): ManagedUserGroup[] {

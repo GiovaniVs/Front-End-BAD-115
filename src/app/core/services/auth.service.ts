@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
+import { environment } from '../../../environments/environment';
 import { LoginRequest } from '../models/auth/login-request.model';
 import { LoginResponse } from '../models/auth/login-response.model';
 import { RegisterRequest } from '../models/auth/register-request.model';
@@ -63,9 +64,10 @@ export interface PaginatedUsersResult {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl =  '/api/auth';
-  private readonly usersUrl = '/api/usuarios';
-  private readonly respondentsUrl = '/api/encuestados';
+  private readonly apiUrl = environment.apiUrl;
+  private readonly baseUrl = `${this.apiUrl}/auth`;
+  private readonly usersUrl = `${this.apiUrl}/usuarios`;
+  private readonly respondentsUrl = `${this.apiUrl}/encuestados`;
 
   loginByRole(role: UserRole, email: string, password: string): Observable<LoginResponse> {
     const payload: LoginRequest = { email, password, role };

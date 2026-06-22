@@ -11,7 +11,7 @@
       <small class="error-text">Ingresa un correo valido.</small>
       }
       @if (loginForm.controls.email.errors?.['loginError']) {
-      <small class="error-text">No se pudo enviar el codigo. Verifica el correo.</small>
+      <small class="error-text">{{ loginError || 'No se pudo enviar el codigo. Verifica el correo.' }}</small>
       }
 
       @if (tokenSent) {

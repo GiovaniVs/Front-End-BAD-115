@@ -125,6 +125,11 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .switch-text {
   margin: 1rem 0 0;
   color: var(--text-muted);

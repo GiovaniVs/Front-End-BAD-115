@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { finalize, timeout } from 'rxjs';
 
 import { LoginResponse } from '../../../../core/models/auth/login-response.model';
 import { AuthService } from '../../../../core/services/auth.service';
@@ -22,18 +23,31 @@ export class AdminLoginPageComponent{
     })
 
     showPassword = false;
+    isLoading = false;
+    loginError = '';
 
     togglePasswordVisibility(): void {
         this.showPassword = !this.showPassword;
     }
 
     onSubmit():void{
+        if (this.isLoading) {
+            return;
+        }
+
         if(this.loginForm.invalid){
             this.loginForm.markAllAsTouched(); 
             return; 
         }
         const {username, password} = this.loginForm.getRawValue(); 
-        this.authService.loginAdmin(username, password).subscribe({
+        this.isLoading = true;
+        this.loginError = '';
+        this.loginForm.controls.password.setErrors(null);
+
+        this.authService.loginAdmin(username, password).pipe(
+            timeout(15000),
+            finalize(() => this.isLoading = false)
+        ).subscribe({
             next:(response)=>{
                 const roleId = this.getRoleId(response);
                 const roleName = this.getRoleName(response, roleId);
@@ -54,10 +68,38 @@ export class AdminLoginPageComponent{
                 localStorage.setItem('user_name', response.fullName || response.username || username);
                 this.router.navigateByUrl(this.getHomeRoute(roleName, roleId));
             },
-            error: () => {
-              this.loginForm.controls.password.setErrors({ invalidCredentials: true });
+            error: (error) => {
+              if (this.isInvalidCredentialsError(error)) {
+                this.loginForm.controls.password.setErrors({ invalidCredentials: true });
+                return;
+              }
+
+              this.loginError = this.getLoginErrorMessage(error);
             }
         }); 
+    }
+
+    private isInvalidCredentialsError(error: unknown): boolean {
+        const status = (error as { status?: number })?.status;
+        return status === 401 || status === 403;
+    }
+
+    private getLoginErrorMessage(error: unknown): string {
+        const status = (error as { status?: number })?.status;
+
+        if ((error as { name?: string })?.name === 'TimeoutError') {
+            return 'El servidor tardo demasiado en responder. Intenta nuevamente.';
+        }
+
+        if (status === 0) {
+            return 'No se pudo conectar con el backend. Revisa que la API este activa y que CORS permita este origen.';
+        }
+
+        if (status && status >= 500) {
+            return 'El backend respondio con un error interno. Revisa la conexion del backend con PostgreSQL en Railway.';
+        }
+
+        return 'No se pudo iniciar sesion. Intenta nuevamente.';
     }
 
     private getRoleId(response: LoginResponse): number | undefined {

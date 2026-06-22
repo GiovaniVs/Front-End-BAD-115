@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { catchError, map, timeout } from 'rxjs/operators';
 
+import { environment } from '../../../environments/environment';
 import { CreateSurveyRequest } from '../models/surveys/create-survey-request.model';
 import { PublicSurvey, PublicSurveyAnswer, Survey, SurveyAnalysis, SurveyAssignment, SurveyQuestionDetail, SurveySummary } from '../models/surveys/survey.model';
 
@@ -20,7 +21,8 @@ interface LocalSurveyAssignment extends SurveyAssignment {
 @Injectable({ providedIn: 'root' })
 export class SurveyService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = '/api/encuestas';
+  private readonly apiUrl = environment.apiUrl;
+  private readonly baseUrl = `${this.apiUrl}/encuestas`;
   private readonly assignmentsStorageKey = 'survey_assignments';
 
   createSurvey(payload: CreateSurveyRequest): Observable<Survey> {
@@ -130,13 +132,13 @@ export class SurveyService {
       return of(this.getLocalAssignments(idEncuestado, correo));
     }
 
-    return this.http.get<SurveyAssignment[] | SurveyAssignmentResponseWrapper>(`/api/encuestados/${idEncuestado}/encuestas-asignadas`, {
+    return this.http.get<SurveyAssignment[] | SurveyAssignmentResponseWrapper>(`${this.apiUrl}/encuestados/${idEncuestado}/encuestas-asignadas`, {
       headers: token ? this.getAuthHeaders(token) : undefined,
       withCredentials: true
     }).pipe(
       map((response) => this.mergeAssignments(this.normalizeAssignmentsResponse(response), idEncuestado, correo)),
       timeout(15000),
-      catchError(() => this.http.get<SurveyAssignment[] | SurveyAssignmentResponseWrapper>(`/api/encuestados/${idEncuestado}/encuestas-pendientes`, {
+      catchError(() => this.http.get<SurveyAssignment[] | SurveyAssignmentResponseWrapper>(`${this.apiUrl}/encuestados/${idEncuestado}/encuestas-pendientes`, {
         headers: token ? this.getAuthHeaders(token) : undefined,
         withCredentials: true
       }).pipe(
@@ -147,11 +149,11 @@ export class SurveyService {
   }
 
   getPublicSurveyByToken(tokenAcceso: string): Observable<PublicSurvey> {
-    return this.http.get<PublicSurvey>(`/api/encuestas-publicas/${tokenAcceso}`).pipe(timeout(15000));
+    return this.http.get<PublicSurvey>(`${this.apiUrl}/encuestas-publicas/${tokenAcceso}`).pipe(timeout(15000));
   }
 
   submitPublicSurveyAnswers(tokenAcceso: string, respuestas: PublicSurveyAnswer[]): Observable<string> {
-    return this.http.post('/api/encuestas-publicas/responder', { tokenAcceso, respuestas }, {
+    return this.http.post(`${this.apiUrl}/encuestas-publicas/responder`, { tokenAcceso, respuestas }, {
       responseType: 'text'
     }).pipe(timeout(15000));
   }
