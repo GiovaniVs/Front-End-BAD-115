@@ -131,6 +131,26 @@ input:focus {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
 }
 
+.password-field {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+}
+
+.password-field input {
+  min-width: 0;
+}
+
+.password-toggle {
+  margin: 0;
+  border: 1px solid #bfdbfe;
+  border-radius: 0.75rem;
+  padding: 0 0.85rem;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 800;
+}
+
 .error-text {
   color: #b91c1c;
   font-size: 0.8rem;

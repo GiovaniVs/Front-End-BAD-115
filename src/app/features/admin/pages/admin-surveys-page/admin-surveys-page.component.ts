@@ -1,5 +1,6 @@
+import { isPlatformBrowser } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectorRef, Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
 
@@ -32,10 +33,12 @@ const QUESTION_TYPE_LABELS: Record<SurveyQuestionType, string> = {
   templateUrl: './admin-surveys-page.component.html',
   styleUrl: './admin-surveys-page.component.css'
 })
-export class AdminSurveysPageComponent {
+export class AdminSurveysPageComponent implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
   private readonly surveyService = inject(SurveyService);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = isPlatformBrowser(this.platformId);
   private saveRequestTimeoutId: number | undefined;
 
   readonly questionTypes: { value: SurveyQuestionType; label: string }[] = [
@@ -49,8 +52,10 @@ export class AdminSurveysPageComponent {
   showCreateForm = false;
   isSaving = false;
   isSavingSurvey = false;
+  isLoadingSurveys = false;
   saveError = '';
   saveSuccess = '';
+  listError = '';
 
   readonly surveyForm = this.formBuilder.nonNullable.group({
     titulo: ['', [Validators.required, Validators.minLength(3)]],
@@ -67,6 +72,41 @@ export class AdminSurveysPageComponent {
 
   get selectedSurvey(): SurveyDraft | undefined {
     return this.surveys.find((survey) => survey.idEncuesta === this.selectedSurveyId);
+  }
+
+  ngOnInit(): void {
+    if (!this.isBrowser) {
+      return;
+    }
+
+    this.loadSurveys();
+  }
+
+  loadSurveys(): void {
+    this.isLoadingSurveys = true;
+    this.listError = '';
+
+    this.surveyService
+      .getSurveys()
+      .pipe(
+        finalize(() => {
+          this.isLoadingSurveys = false;
+          this.changeDetectorRef.detectChanges();
+        })
+      )
+      .subscribe({
+        next: (surveys) => {
+          const currentUser = this.normalizeText(this.getLocalStorageValue('user_name'));
+          const designerSurveys = currentUser
+            ? surveys.filter((survey) => this.normalizeText(survey.creadorPor) === currentUser)
+            : [];
+
+          this.surveys.splice(0, this.surveys.length, ...designerSurveys.map((survey) => this.toSurveyDraft(survey)));
+        },
+        error: () => {
+          this.listError = 'No se pudieron cargar las encuestas del disenador.';
+        }
+      });
   }
 
   toggleCreateForm(): void {
@@ -295,7 +335,32 @@ export class AdminSurveysPageComponent {
   }
 
   private hasAuthToken(): boolean {
-    const token = localStorage.getItem('auth_token') || localStorage.getItem('auth_basic_token');
+    const token = this.getLocalStorageValue('auth_token') || this.getLocalStorageValue('auth_basic_token');
     return !!token && token !== 'undefined';
+  }
+
+  private getLocalStorageValue(key: string): string | null {
+    if (typeof localStorage === 'undefined') {
+      return null;
+    }
+
+    return localStorage.getItem(key);
+  }
+
+  private toSurveyDraft(survey: Survey): SurveyDraft {
+    return {
+      ...survey,
+      objetivo: survey.objetivo ?? survey.objective,
+      questions: [],
+      saved: true
+    };
+  }
+
+  private normalizeText(value: string | undefined | null): string {
+    return (value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
   }
 }

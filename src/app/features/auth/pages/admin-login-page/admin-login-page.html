@@ -15,7 +15,17 @@
       }
 
       <label for="admin-password">Contrasena</label>
-      <input id="admin-password" formControlName="password" type="password" placeholder="Ingresa tu contrasena" />
+      <div class="password-field">
+        <input
+          id="admin-password"
+          formControlName="password"
+          [type]="showPassword ? 'text' : 'password'"
+          placeholder="Ingresa tu contrasena"
+        />
+        <button class="password-toggle" type="button" (click)="togglePasswordVisibility()">
+          {{ showPassword ? 'Ocultar' : 'Ver' }}
+        </button>
+      </div>
       @if (loginForm.controls.password.touched && loginForm.controls.password.errors?.['required']) {
       <small class="error-text">La contrasena es obligatoria.</small>
       }

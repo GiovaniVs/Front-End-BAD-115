@@ -61,7 +61,17 @@
           </tr>
         </thead>
         <tbody>
-          @if (surveys.length === 0) {
+          @if (isLoadingSurveys) {
+            <tr>
+              <td class="empty-state" colspan="6">Cargando encuestas...</td>
+            </tr>
+          }
+          @if (!isLoadingSurveys && listError) {
+            <tr>
+              <td class="empty-state" colspan="6">{{ listError }}</td>
+            </tr>
+          }
+          @if (!isLoadingSurveys && !listError && surveys.length === 0) {
             <tr>
               <td class="empty-state" colspan="6">No hay encuestas</td>
             </tr>

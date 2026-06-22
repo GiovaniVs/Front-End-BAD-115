@@ -24,7 +24,20 @@ export class SurveyService {
     );
   }
 
+  getSurveys(): Observable<Survey[]> {
+    const token = this.getStoredToken();
+
+    return this.http.get<Survey[]>(this.baseUrl, {
+      headers: token ? this.getAuthHeaders(token) : undefined,
+      withCredentials: true
+    }).pipe(timeout(15000));
+  }
+
   private getStoredToken(): string | undefined {
+    if (typeof localStorage === 'undefined') {
+      return undefined;
+    }
+
     const token = localStorage.getItem('auth_basic_token') || localStorage.getItem('auth_token');
     return token && token !== 'undefined' ? token : undefined;
   }

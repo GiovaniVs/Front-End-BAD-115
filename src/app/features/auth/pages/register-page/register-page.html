@@ -81,18 +81,33 @@
       }
 
       <label for="register-password">Contrasena</label>
-      <input id="register-password" formControlName="password" type="password" placeholder="Minimo 6 caracteres" />
+      <div class="password-field">
+        <input
+          id="register-password"
+          formControlName="password"
+          [type]="showPassword ? 'text' : 'password'"
+          placeholder="Minimo 6 caracteres"
+        />
+        <button class="password-toggle" type="button" (click)="togglePasswordVisibility()">
+          {{ showPassword ? 'Ocultar' : 'Ver' }}
+        </button>
+      </div>
       @if (registerForm.controls.password.touched && registerForm.controls.password.invalid) {
       <small class="error-text">La contrasena debe tener minimo 6 caracteres.</small>
       }
 
       <label for="register-confirm-password">Confirmar contrasena</label>
-      <input
-        id="register-confirm-password"
-        formControlName="confirmPassword"
-        type="password"
-        placeholder="Repite tu contrasena"
-      />
+      <div class="password-field">
+        <input
+          id="register-confirm-password"
+          formControlName="confirmPassword"
+          [type]="showConfirmPassword ? 'text' : 'password'"
+          placeholder="Repite tu contrasena"
+        />
+        <button class="password-toggle" type="button" (click)="toggleConfirmPasswordVisibility()">
+          {{ showConfirmPassword ? 'Ocultar' : 'Ver' }}
+        </button>
+      </div>
       @if (registerForm.controls.confirmPassword.touched && registerForm.errors?.['passwordsMismatch']) {
       <small class="error-text">Las contrasenas no coinciden.</small>
       }

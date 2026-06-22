@@ -21,6 +21,12 @@ export class AdminLoginPageComponent{
         password : ['', [Validators.required, Validators.minLength(6)]]
     })
 
+    showPassword = false;
+
+    togglePasswordVisibility(): void {
+        this.showPassword = !this.showPassword;
+    }
+
     onSubmit():void{
         if(this.loginForm.invalid){
             this.loginForm.markAllAsTouched(); 
