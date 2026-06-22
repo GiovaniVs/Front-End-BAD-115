@@ -36,6 +36,9 @@
         @if (saveError) {
           <small class="error-text">{{ saveError }}</small>
         }
+        @if (saveSuccess) {
+          <small class="success-text">{{ saveSuccess }}</small>
+        }
 
         <button class="save-survey-button" type="submit" [disabled]="isSaving">
           {{ isSaving ? 'Guardando...' : 'Continuar a preguntas' }}
@@ -66,7 +69,7 @@
           @for (survey of surveys; track survey.idEncuesta || survey.id_encuesta || survey.titulo) {
             <tr>
               <td>{{ survey.titulo }}</td>
-              <td>{{ survey.estado || 'A' }}</td>
+              <td>{{ survey.estado || 'Borrador' }}</td>
               <td>{{ survey.questions.length }}</td>
               <td>0</td>
               <td>{{ survey.fechaCreacion || survey.fecha_creacion || '-' }}</td>
@@ -110,19 +113,21 @@
           <select
             class="question-type-select"
             id="question-type"
-            formControlName="tipo"
+            formControlName="tipoPregunta"
             aria-label="Tipo de pregunta"
             (change)="onQuestionTypeChange()"
           >
-            <option value="Cerrada">Opcion multiple</option>
-            <option value="Verdadero/Falso">Verdadero/Falso</option>
-            <option value="Ranking">Ranking</option>
+            @for (type of questionTypes; track type.value) {
+              <option [value]="type.value">{{ type.label }}</option>
+            }
           </select>
         </div>
 
         @if (shouldShowOptions()) {
           <div class="options-editor">
-            <label for="question-options">{{ questionForm.controls.tipo.value === 'Ranking' ? 'Elementos para ordenar' : 'Opciones de respuesta' }}</label>
+            <label for="question-options">
+              {{ questionForm.controls.tipoPregunta.value === 'RANKING' ? 'Elementos para ordenar' : 'Opciones de respuesta' }}
+            </label>
             <textarea
               id="question-options"
               formControlName="opciones"
@@ -130,53 +135,24 @@
               placeholder="Elemento 1&#10;Elemento 2&#10;Elemento 3"
             ></textarea>
             <p class="helper-text">Escribe una opcion por linea.</p>
-          </div>
-        }
-
-        @if (questionForm.controls.tipo.value === 'Cerrada') {
-          <div class="correct-option-field">
-            <label>Respuestas correctas</label>
-            <div class="correct-options-list">
-              @for (option of optionPreview(); track option) {
-                <button
-                  class="correct-option-button"
-                  type="button"
-                  [class.selected]="isCorrectOptionSelected(option)"
-                  (click)="toggleCorrectOption(option)"
-                >
-                  <span aria-hidden="true">{{ isCorrectOptionSelected(option) ? '✓' : '' }}</span>
-                  {{ option }}
-                </button>
-              }
-            </div>
-            @if (questionForm.controls.opcionCorrecta.touched && questionForm.controls.opcionCorrecta.invalid) {
-              <small class="error-text">Selecciona al menos una respuesta correcta.</small>
+            @if (questionForm.controls.opciones.touched && questionForm.controls.opciones.invalid) {
+              <small class="error-text">Agrega al menos una opcion para este tipo de pregunta.</small>
+            }
+            @if (optionPreview().length > 0) {
+              <div class="option-preview-list">
+                @for (option of optionPreview(); track option) {
+                  <span>{{ option }}</span>
+                }
+              </div>
             }
           </div>
         }
 
-        @if (shouldShowTrueFalse()) {
-          <div class="true-false-block">
-            <div class="true-false-preview">
-              <span>Verdadero</span>
-              <span>Falso</span>
-            </div>
-
-            <div class="correct-option-field">
-              <label for="true-false-correct-option">Respuesta correcta</label>
-              <select id="true-false-correct-option" formControlName="opcionCorrecta">
-                <option value="">Selecciona la respuesta correcta</option>
-                <option value="Verdadero">Verdadero</option>
-                <option value="Falso">Falso</option>
-              </select>
-              @if (questionForm.controls.opcionCorrecta.touched && questionForm.controls.opcionCorrecta.invalid) {
-                <small class="error-text">Selecciona la respuesta correcta.</small>
-              }
-            </div>
-          </div>
+        @if (questionForm.controls.tipoPregunta.value === 'ABIERTA') {
+          <p class="helper-text">Este tipo se enviara con <code>opciones: []</code>.</p>
         }
 
-        @if (questionForm.controls.tipo.value === 'Ranking') {
+        @if (questionForm.controls.tipoPregunta.value === 'RANKING') {
           <p class="helper-text">El encuestado debera ordenar los elementos segun su criterio.</p>
         }
 
@@ -201,22 +177,30 @@
               <strong>{{ question.enunciado }}</strong>
             </div>
             <div class="question-meta">
-              <span>{{ question.tipo }}</span>
+              <span>{{ questionTypeLabel(question.tipoPregunta) }}</span>
               <span>{{ question.esObligatoria ? 'Obligatoria' : 'Opcional' }}</span>
+              <span>Orden {{ question.orden }}</span>
             </div>
             @if (question.opciones.length > 0) {
               <ul class="option-list">
                 @for (option of question.opciones; track option) {
-                  <li>{{ option }}</li>
+                  <li>{{ option.textoOpcion }}{{ option.esMixta ? ' (mixta)' : '' }}</li>
                 }
               </ul>
-            }
-            @if (question.opcionesCorrectas.length > 0) {
-              <p class="correct-answer">Correcta(s): {{ question.opcionesCorrectas.join(', ') }}</p>
             }
           </div>
         }
       </div>
+
+      @if (saveError) {
+        <small class="error-text">{{ saveError }}</small>
+      }
+      @if (saveSuccess) {
+        <small class="success-text">{{ saveSuccess }}</small>
+      }
+      <button class="save-survey-button" type="button" [disabled]="isSavingSurvey || survey.saved" (click)="saveSelectedSurvey()">
+        {{ survey.saved ? 'Encuesta guardada' : isSavingSurvey ? 'Guardando encuesta...' : 'Guardar encuesta' }}
+      </button>
     </article>
   }
 </section>

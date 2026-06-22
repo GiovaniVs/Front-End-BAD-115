@@ -1,22 +1,30 @@
-import { Component, inject } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { finalize } from 'rxjs/operators';
 
+import {
+  CreateSurveyQuestionRequest,
+  SurveyQuestionType
+} from '../../../../core/models/surveys/create-survey-request.model';
 import { Survey } from '../../../../core/models/surveys/survey.model';
+import { SurveyService } from '../../../../core/services/survey.service';
 
-type QuestionType = 'Cerrada' | 'Verdadero/Falso' | 'Ranking';
-
-interface SurveyQuestion {
+interface SurveyQuestion extends CreateSurveyQuestionRequest {
   id: number;
-  enunciado: string;
-  tipo: QuestionType;
-  esObligatoria: boolean;
-  opciones: string[];
-  opcionesCorrectas: string[];
 }
 
 interface SurveyDraft extends Survey {
   questions: SurveyQuestion[];
+  saved?: boolean;
 }
+
+const QUESTION_TYPE_LABELS: Record<SurveyQuestionType, string> = {
+  CERRADA: 'Seleccion Unica / Multiple',
+  ABIERTA: 'Respuesta de Texto Libre',
+  ESCALA: 'Escala de Opinion / Likert',
+  RANKING: 'Orden de Preferencia'
+};
 
 @Component({
   selector: 'app-admin-surveys-page',
@@ -26,13 +34,23 @@ interface SurveyDraft extends Survey {
 })
 export class AdminSurveysPageComponent {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly surveyService = inject(SurveyService);
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private saveRequestTimeoutId: number | undefined;
 
+  readonly questionTypes: { value: SurveyQuestionType; label: string }[] = [
+    { value: 'CERRADA', label: QUESTION_TYPE_LABELS.CERRADA },
+    { value: 'ABIERTA', label: QUESTION_TYPE_LABELS.ABIERTA },
+    { value: 'ESCALA', label: QUESTION_TYPE_LABELS.ESCALA },
+    { value: 'RANKING', label: QUESTION_TYPE_LABELS.RANKING }
+  ];
   readonly surveys: SurveyDraft[] = [];
   selectedSurveyId: number | null = null;
   showCreateForm = false;
   isSaving = false;
+  isSavingSurvey = false;
   saveError = '';
-  selectedCorrectOptions: string[] = [];
+  saveSuccess = '';
 
   readonly surveyForm = this.formBuilder.nonNullable.group({
     titulo: ['', [Validators.required, Validators.minLength(3)]],
@@ -42,10 +60,9 @@ export class AdminSurveysPageComponent {
 
   readonly questionForm = this.formBuilder.nonNullable.group({
     enunciado: ['', [Validators.required, Validators.minLength(5)]],
-    tipo: this.formBuilder.nonNullable.control<QuestionType>('Cerrada', [Validators.required]),
+    tipoPregunta: this.formBuilder.nonNullable.control<SurveyQuestionType>('CERRADA', [Validators.required]),
     esObligatoria: true,
-    opciones: [''],
-    opcionCorrecta: ['']
+    opciones: ['']
   });
 
   get selectedSurvey(): SurveyDraft | undefined {
@@ -55,6 +72,7 @@ export class AdminSurveysPageComponent {
   toggleCreateForm(): void {
     this.showCreateForm = !this.showCreateForm;
     this.saveError = '';
+    this.saveSuccess = '';
   }
 
   createSurvey(): void {
@@ -75,7 +93,8 @@ export class AdminSurveysPageComponent {
       instrucciones: instrucciones || undefined,
       estado: 'Borrador',
       fechaCreacion: new Date().toLocaleDateString(),
-      questions: []
+      questions: [],
+      saved: false
     });
     this.selectedSurveyId = idEncuesta;
     this.surveyForm.reset();
@@ -87,12 +106,12 @@ export class AdminSurveysPageComponent {
     this.selectedSurveyId = survey.idEncuesta ?? null;
     this.questionForm.reset({
       enunciado: '',
-      tipo: 'Cerrada',
+      tipoPregunta: 'CERRADA',
       esObligatoria: true,
-      opciones: '',
-      opcionCorrecta: ''
+      opciones: ''
     });
-    this.selectedCorrectOptions = [];
+    this.saveError = '';
+    this.saveSuccess = '';
   }
 
   addQuestion(): void {
@@ -106,69 +125,129 @@ export class AdminSurveysPageComponent {
       return;
     }
 
-    const { enunciado, tipo, esObligatoria, opciones, opcionCorrecta } = this.questionForm.getRawValue();
-    const parsedOptions = tipo === 'Verdadero/Falso' ? ['Verdadero', 'Falso'] : this.parseOptions(opciones);
-    const opcionesCorrectas = tipo === 'Cerrada' ? this.selectedCorrectOptions : opcionCorrecta ? [opcionCorrecta] : [];
+    const { enunciado, tipoPregunta, esObligatoria, opciones } = this.questionForm.getRawValue();
+    const parsedOptions = this.shouldQuestionUseOptions(tipoPregunta) ? this.parseOptions(opciones) : [];
 
-    if (tipo !== 'Ranking' && opcionesCorrectas.length === 0) {
-      this.questionForm.controls.opcionCorrecta.setErrors({ required: true });
-      this.questionForm.controls.opcionCorrecta.markAsTouched();
-      return;
-    }
-
-    if (tipo === 'Cerrada' && opcionesCorrectas.some((option) => !parsedOptions.includes(option))) {
-      this.questionForm.controls.opcionCorrecta.setErrors({ required: true });
-      this.questionForm.controls.opcionCorrecta.markAsTouched();
+    if (this.shouldQuestionUseOptions(tipoPregunta) && parsedOptions.length === 0) {
+      this.questionForm.controls.opciones.setErrors({ required: true });
+      this.questionForm.controls.opciones.markAsTouched();
       return;
     }
 
     survey.questions.push({
       id: Date.now(),
       enunciado,
-      tipo,
+      tipoPregunta,
+      orden: survey.questions.length + 1,
       esObligatoria,
-      opcionesCorrectas,
-      opciones: parsedOptions
+      opciones: parsedOptions.map((option) => ({
+        textoOpcion: option,
+        esMixta: this.isMixedOption(option)
+      }))
     });
+    survey.saved = false;
+    survey.estado = 'Borrador';
 
     this.questionForm.reset({
       enunciado: '',
-      tipo: 'Cerrada',
+      tipoPregunta: 'CERRADA',
       esObligatoria: true,
-      opciones: '',
-      opcionCorrecta: ''
+      opciones: ''
     });
-    this.selectedCorrectOptions = [];
+    this.saveError = '';
+    this.saveSuccess = '';
   }
 
   shouldShowOptions(): boolean {
-    const type = this.questionForm.controls.tipo.value;
-    return type === 'Cerrada' || type === 'Ranking';
-  }
-
-  shouldShowTrueFalse(): boolean {
-    return this.questionForm.controls.tipo.value === 'Verdadero/Falso';
+    return this.shouldQuestionUseOptions(this.questionForm.controls.tipoPregunta.value);
   }
 
   optionPreview(): string[] {
     return this.parseOptions(this.questionForm.controls.opciones.value);
   }
 
-  toggleCorrectOption(option: string): void {
-    this.questionForm.controls.opcionCorrecta.setErrors(null);
-    this.selectedCorrectOptions = this.isCorrectOptionSelected(option)
-      ? this.selectedCorrectOptions.filter((selectedOption) => selectedOption !== option)
-      : [...this.selectedCorrectOptions, option];
-  }
-
-  isCorrectOptionSelected(option: string): boolean {
-    return this.selectedCorrectOptions.includes(option);
-  }
-
   onQuestionTypeChange(): void {
-    this.selectedCorrectOptions = [];
-    this.questionForm.controls.opcionCorrecta.setValue('');
-    this.questionForm.controls.opcionCorrecta.setErrors(null);
+    this.questionForm.controls.opciones.setErrors(null);
+    if (!this.shouldShowOptions()) {
+      this.questionForm.controls.opciones.setValue('');
+    }
+  }
+
+  questionTypeLabel(type: SurveyQuestionType): string {
+    return QUESTION_TYPE_LABELS[type];
+  }
+
+  saveSelectedSurvey(): void {
+    const survey = this.selectedSurvey;
+    if (!survey || this.isSavingSurvey) {
+      return;
+    }
+
+    if (survey.questions.length === 0) {
+      this.saveError = 'Agrega al menos una pregunta antes de guardar la encuesta.';
+      return;
+    }
+
+    if (!this.hasAuthToken()) {
+      this.saveError = 'No hay credenciales de sesion para guardar. Cierra sesion e inicia de nuevo como disenador.';
+      return;
+    }
+
+    this.isSavingSurvey = true;
+    this.saveError = '';
+    this.saveSuccess = '';
+    this.clearSaveRequestTimeout();
+    this.saveRequestTimeoutId = window.setTimeout(() => {
+      if (!this.isSavingSurvey) {
+        return;
+      }
+
+      this.finishSavingSurvey();
+      this.saveError = 'El backend no respondio al guardar. Revisa la consola de Spring Boot y la peticion POST /api/encuestas en Network.';
+      this.changeDetectorRef.detectChanges();
+    }, 10000);
+
+    this.surveyService
+      .createSurvey({
+        titulo: survey.titulo,
+        objetivo: survey.objetivo,
+        instrucciones: survey.instrucciones,
+        preguntas: survey.questions.map(({ id: _id, ...question }) => question)
+      })
+      .pipe(
+        finalize(() => {
+          this.clearSaveRequestTimeout();
+          this.finishSavingSurvey();
+        })
+      )
+      .subscribe({
+        next: (createdSurvey) => {
+          survey.idEncuesta = createdSurvey.idEncuesta ?? createdSurvey.id_encuesta ?? survey.idEncuesta;
+          survey.estado = createdSurvey.estado ?? 'Guardada';
+          survey.fechaCreacion = createdSurvey.fechaCreacion ?? createdSurvey.fecha_creacion ?? survey.fechaCreacion;
+          survey.saved = true;
+          this.saveSuccess = createdSurvey.mensaje ?? 'Encuesta guardada correctamente.';
+          this.changeDetectorRef.detectChanges();
+        },
+        error: (error: unknown) => {
+          this.saveError = this.getSaveErrorMessage(error);
+          this.changeDetectorRef.detectChanges();
+        }
+      });
+  }
+
+  private finishSavingSurvey(): void {
+    this.isSavingSurvey = false;
+    this.changeDetectorRef.detectChanges();
+  }
+
+  private clearSaveRequestTimeout(): void {
+    if (this.saveRequestTimeoutId === undefined) {
+      return;
+    }
+
+    window.clearTimeout(this.saveRequestTimeoutId);
+    this.saveRequestTimeoutId = undefined;
   }
 
   private parseOptions(options: string): string[] {
@@ -176,5 +255,47 @@ export class AdminSurveysPageComponent {
       .split('\n')
       .map((option) => option.trim())
       .filter(Boolean);
+  }
+
+  private shouldQuestionUseOptions(type: SurveyQuestionType): boolean {
+    return type !== 'ABIERTA';
+  }
+
+  private isMixedOption(option: string): boolean {
+    const normalizedOption = option.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    return normalizedOption.includes('otro') || normalizedOption.includes('especifique');
+  }
+
+  private getSaveErrorMessage(error: unknown): string {
+    if (this.isTimeoutError(error)) {
+      return 'El backend no respondio a tiempo. Verifica que Spring Boot este ejecutandose en el puerto 8083.';
+    }
+
+    if (!(error instanceof HttpErrorResponse)) {
+      return 'No se pudo guardar la encuesta. Revisa la conexion con el API.';
+    }
+
+    if (error.status === 0) {
+      return 'El backend no respondio a tiempo. Verifica que Spring Boot este ejecutandose en el puerto 8083.';
+    }
+
+    if (error.status === 401 || error.status === 403) {
+      return 'No se pudo autenticar la sesion. Cierra sesion e inicia de nuevo; si fallaste varias veces, verifica que el usuario no este bloqueado.';
+    }
+
+    if (error.status === 400) {
+      return 'El backend rechazo los datos de la encuesta. Revisa que cada pregunta tenga el tipo y opciones correctas.';
+    }
+
+    return `No se pudo guardar la encuesta. Error ${error.status}.`;
+  }
+
+  private isTimeoutError(error: unknown): boolean {
+    return typeof error === 'object' && error !== null && 'name' in error && error.name === 'TimeoutError';
+  }
+
+  private hasAuthToken(): boolean {
+    const token = localStorage.getItem('auth_token') || localStorage.getItem('auth_basic_token');
+    return !!token && token !== 'undefined';
   }
 }

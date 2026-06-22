@@ -63,6 +63,9 @@ export class RegisterPageComponent {
       debeCambiarPass: false
     }).subscribe({
       next: () => {
+        const basicToken = `Basic ${this.toBase64Utf8(`${username}:${password}`)}`;
+        localStorage.setItem('auth_basic_token', basicToken);
+        localStorage.setItem('auth_token', basicToken);
         localStorage.setItem('user_name', username);
         localStorage.setItem('user_role', 'DISENADOR');
         this.router.navigateByUrl('/disenador/encuestas');
@@ -129,5 +132,11 @@ export class RegisterPageComponent {
     const confirmPassword = control.get('confirmPassword')?.value;
 
     return password && confirmPassword && password !== confirmPassword ? { passwordsMismatch: true } : null;
+  }
+
+  private toBase64Utf8(value: string): string {
+    const bytes = new TextEncoder().encode(value);
+    const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join('');
+    return btoa(binary);
   }
 }

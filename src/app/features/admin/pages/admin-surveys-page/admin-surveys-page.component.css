@@ -98,6 +98,12 @@ h2 {
   font-weight: 700;
 }
 
+.success-text {
+  color: #166534;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
 .save-survey-button {
   justify-self: start;
   border: 0;
@@ -272,9 +278,25 @@ tbody tr:last-child td {
   font-size: 0.95rem;
 }
 
+.option-preview-list,
 .correct-options-list {
   display: grid;
   gap: 0.55rem;
+}
+
+.option-preview-list {
+  align-items: start;
+}
+
+.option-preview-list span {
+  width: fit-content;
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  padding: 0.45rem 0.75rem;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 0.9rem;
+  font-weight: 800;
 }
 
 .correct-option-button,

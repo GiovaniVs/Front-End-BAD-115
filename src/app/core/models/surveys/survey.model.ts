@@ -1,4 +1,5 @@
 export interface Survey {
+  mensaje?: string;
   idEncuesta?: number;
   id_encuesta?: number;
   titulo: string;

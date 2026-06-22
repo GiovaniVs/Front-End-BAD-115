@@ -189,7 +189,13 @@ export class AdminLoginPageComponent{
     }
 
     private getBasicAuthToken(username: string, password: string): string {
-        return `Basic ${btoa(`${username}:${password}`)}`;
+        return `Basic ${this.toBase64Utf8(`${username}:${password}`)}`;
+    }
+
+    private toBase64Utf8(value: string): string {
+        const bytes = new TextEncoder().encode(value);
+        const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join('');
+        return btoa(binary);
     }
 
 }
