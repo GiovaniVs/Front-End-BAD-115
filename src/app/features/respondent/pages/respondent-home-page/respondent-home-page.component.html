@@ -8,21 +8,33 @@
   <section class="summary-grid" aria-label="Resumen de encuestas">
     <article>
       <strong>{{ surveys.length }}</strong>
-      <span>Disponibles</span>
+      <span>Asignadas</span>
     </article>
     <article>
-      <strong>0</strong>
+      <strong>{{ completedSurveys.length }}</strong>
       <span>Completadas</span>
     </article>
     <article>
-      <strong>{{ surveys.length }}</strong>
+      <strong>{{ pendingSurveys.length }}</strong>
       <span>Pendientes</span>
     </article>
   </section>
 
   <section class="survey-list" aria-label="Listado de encuestas">
-    @for (survey of surveys; track survey.title) {
-      <article class="survey-card">
+    @if (isLoading) {
+      <article class="empty-card">Cargando encuestas asignadas...</article>
+    }
+
+    @if (!isLoading && loadError) {
+      <article class="empty-card error-state">{{ loadError }}</article>
+    }
+
+    @if (!isLoading && !loadError && surveys.length === 0) {
+      <article class="empty-card">Aun no tienes encuestas asignadas.</article>
+    }
+
+    @for (survey of pendingSurveys; track survey.id) {
+      <article class="survey-card pending-card">
         <div>
           <span class="status-pill">{{ survey.status }}</span>
           <h2>{{ survey.title }}</h2>
@@ -31,10 +43,35 @@
 
         <div class="survey-meta">
           <span>{{ survey.questions }} preguntas</span>
-          <span>{{ survey.dueDate }}</span>
+          <span>{{ survey.dateText }}</span>
         </div>
 
-        <button type="button">Responder encuesta</button>
+        @if (survey.token) {
+          <a class="answer-button" [routerLink]="['/encuestado/responder', survey.token]">Responder encuesta</a>
+        } @else {
+          <button type="button" disabled>Sin acceso</button>
+        }
+      </article>
+    }
+
+    @if (completedSurveys.length > 0) {
+      <h2 class="section-title">Encuestas respondidas</h2>
+    }
+
+    @for (survey of completedSurveys; track survey.id) {
+      <article class="survey-card completed-card">
+        <div>
+          <span class="status-pill completed-pill">{{ survey.status }}</span>
+          <h2>{{ survey.title }}</h2>
+          <p>{{ survey.description }}</p>
+        </div>
+
+        <div class="survey-meta">
+          <span>{{ survey.questions }} preguntas</span>
+          <span>{{ survey.dateText }}</span>
+        </div>
+
+        <button type="button" disabled>Respondida</button>
       </article>
     }
   </section>

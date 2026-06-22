@@ -1,7 +1,7 @@
 import { isPlatformBrowser } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef, Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
 
 import {
@@ -9,6 +9,7 @@ import {
   SurveyQuestionType
 } from '../../../../core/models/surveys/create-survey-request.model';
 import { Survey } from '../../../../core/models/surveys/survey.model';
+import { AuthService, AuthUserAccount } from '../../../../core/services/auth.service';
 import { SurveyService } from '../../../../core/services/survey.service';
 
 interface SurveyQuestion extends CreateSurveyQuestionRequest {
@@ -21,6 +22,12 @@ interface SurveyDraft extends Survey {
   questionsLoaded?: boolean;
 }
 
+interface RespondentOption {
+  id: number;
+  label: string;
+  email?: string;
+}
+
 const QUESTION_TYPE_LABELS: Record<SurveyQuestionType, string> = {
   CERRADA: 'Seleccion Unica / Multiple',
   ABIERTA: 'Respuesta de Texto Libre',
@@ -30,13 +37,14 @@ const QUESTION_TYPE_LABELS: Record<SurveyQuestionType, string> = {
 
 @Component({
   selector: 'app-admin-surveys-page',
-  imports: [ReactiveFormsModule],
+  imports: [FormsModule, ReactiveFormsModule],
   templateUrl: './admin-surveys-page.component.html',
   styleUrl: './admin-surveys-page.component.css'
 })
 export class AdminSurveysPageComponent implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
   private readonly surveyService = inject(SurveyService);
+  private readonly authService = inject(AuthService);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
@@ -49,6 +57,7 @@ export class AdminSurveysPageComponent implements OnInit {
     { value: 'RANKING', label: QUESTION_TYPE_LABELS.RANKING }
   ];
   readonly surveys: SurveyDraft[] = [];
+  readonly respondents: RespondentOption[] = [];
   selectedSurveyId: number | null = null;
   editingQuestionId: number | null = null;
   showCreateForm = false;
@@ -56,9 +65,14 @@ export class AdminSurveysPageComponent implements OnInit {
   isSavingSurvey = false;
   isLoadingSurveys = false;
   isLoadingSurveyQuestions = false;
+  isLoadingRespondents = false;
+  isAssigningSurvey = false;
+  isPublishingSurvey = false;
   saveError = '';
   saveSuccess = '';
   listError = '';
+  assignmentError = '';
+  assignmentSuccess = '';
 
   readonly surveyForm = this.formBuilder.nonNullable.group({
     titulo: ['', [Validators.required, Validators.minLength(3)]],
@@ -79,6 +93,10 @@ export class AdminSurveysPageComponent implements OnInit {
     opciones: ['']
   });
 
+  readonly assignmentForm = this.formBuilder.group({
+    idEncuestados: this.formBuilder.nonNullable.control<number[]>([], [Validators.required])
+  });
+
   get selectedSurvey(): SurveyDraft | undefined {
     return this.surveys.find((survey) => this.getSurveyId(survey) === this.selectedSurveyId);
   }
@@ -89,6 +107,7 @@ export class AdminSurveysPageComponent implements OnInit {
     }
 
     this.loadSurveys();
+    this.loadRespondents();
   }
 
   loadSurveys(): void {
@@ -114,6 +133,28 @@ export class AdminSurveysPageComponent implements OnInit {
         },
         error: () => {
           this.listError = 'No se pudieron cargar las encuestas del disenador.';
+        }
+      });
+  }
+
+  loadRespondents(): void {
+    this.isLoadingRespondents = true;
+    this.assignmentError = '';
+
+    this.authService
+      .getRespondentsPage(this.getAuthToken(), 0, 100)
+      .pipe(
+        finalize(() => {
+          this.isLoadingRespondents = false;
+          this.changeDetectorRef.detectChanges();
+        })
+      )
+      .subscribe({
+        next: ({ users }) => {
+          this.respondents.splice(0, this.respondents.length, ...users.map((user) => this.toRespondentOption(user)).filter((user): user is RespondentOption => !!user));
+        },
+        error: () => {
+          this.assignmentError = 'No se pudo cargar la lista de encuestados.';
         }
       });
   }
@@ -392,6 +433,95 @@ export class AdminSurveysPageComponent implements OnInit {
       });
   }
 
+  assignSelectedSurvey(): void {
+    const survey = this.selectedSurvey;
+    const surveyId = survey ? this.getPersistedSurveyId(survey) : undefined;
+
+    if (!survey || !surveyId) {
+      this.assignmentError = 'Guarda la encuesta antes de asignarla a un encuestado.';
+      return;
+    }
+
+    if (this.assignmentForm.invalid) {
+      this.assignmentForm.markAllAsTouched();
+      return;
+    }
+
+    const selectedIds = this.assignmentForm.controls.idEncuestados.value;
+    const selectedRespondents = this.respondents.filter((item) => selectedIds.includes(item.id));
+
+    if (selectedRespondents.length === 0) {
+      this.assignmentError = 'Selecciona al menos un encuestado valido.';
+      return;
+    }
+
+    this.isAssigningSurvey = true;
+    this.assignmentError = '';
+    this.assignmentSuccess = '';
+
+    this.surveyService
+      .assignSurveyToRespondents(surveyId, selectedRespondents, survey)
+      .pipe(
+        finalize(() => {
+          this.isAssigningSurvey = false;
+          this.changeDetectorRef.detectChanges();
+        })
+      )
+      .subscribe({
+        next: () => {
+          this.assignmentSuccess = selectedRespondents.length === 1
+            ? `Encuesta asignada a ${selectedRespondents[0].label}.`
+            : `Encuesta asignada a ${selectedRespondents.length} encuestados.`;
+          this.assignmentForm.reset({ idEncuestados: [] });
+        },
+        error: () => {
+          this.assignmentError = 'No se pudo asignar la encuesta.';
+        }
+      });
+  }
+
+  publishSelectedSurvey(): void {
+    const survey = this.selectedSurvey;
+    const surveyId = survey ? this.getPersistedSurveyId(survey) : undefined;
+
+    if (!survey || !surveyId) {
+      this.saveError = 'Guarda la encuesta antes de publicarla.';
+      return;
+    }
+
+    if (!survey.saved) {
+      this.saveError = 'Guarda los cambios pendientes antes de publicar la encuesta.';
+      return;
+    }
+
+    if (survey.questions.length === 0) {
+      this.saveError = 'Agrega al menos una pregunta antes de publicar la encuesta.';
+      return;
+    }
+
+    this.isPublishingSurvey = true;
+    this.saveError = '';
+    this.saveSuccess = '';
+
+    this.surveyService
+      .updateSurveyStatus(surveyId, 'PUBLICADA')
+      .pipe(
+        finalize(() => {
+          this.isPublishingSurvey = false;
+          this.changeDetectorRef.detectChanges();
+        })
+      )
+      .subscribe({
+        next: (message) => {
+          survey.estado = 'P';
+          this.saveSuccess = message || 'Encuesta publicada correctamente.';
+        },
+        error: (error: unknown) => {
+          this.saveError = this.getStatusErrorMessage(error);
+        }
+      });
+  }
+
   private finishSavingSurvey(): void {
     this.isSavingSurvey = false;
     this.changeDetectorRef.detectChanges();
@@ -446,13 +576,40 @@ export class AdminSurveysPageComponent implements OnInit {
     return `No se pudo guardar la encuesta. Error ${error.status}.`;
   }
 
+  private getStatusErrorMessage(error: unknown): string {
+    if (this.isTimeoutError(error)) {
+      return 'El backend no respondio a tiempo al publicar. Verifica que Spring Boot este ejecutandose en el puerto 8083.';
+    }
+
+    if (!(error instanceof HttpErrorResponse)) {
+      return 'No se pudo publicar la encuesta. Revisa la conexion con el API.';
+    }
+
+    const backendMessage = typeof error.error === 'string' ? error.error : undefined;
+
+    if (error.status === 0) {
+      return 'No se pudo publicar la encuesta. Si usas el backend directo, reinicia Spring Boot para aplicar CORS con PATCH.';
+    }
+
+    if (error.status === 401 || error.status === 403) {
+      return 'No tienes permisos para publicar la encuesta. Cierra sesion e inicia nuevamente como disenador.';
+    }
+
+    return backendMessage || `No se pudo publicar la encuesta. Error ${error.status}.`;
+  }
+
   private isTimeoutError(error: unknown): boolean {
     return typeof error === 'object' && error !== null && 'name' in error && error.name === 'TimeoutError';
   }
 
   private hasAuthToken(): boolean {
-    const token = this.getLocalStorageValue('auth_token') || this.getLocalStorageValue('auth_basic_token');
+    const token = this.getAuthToken();
     return !!token && token !== 'undefined';
+  }
+
+  private getAuthToken(): string | undefined {
+    const token = this.getLocalStorageValue('auth_token') || this.getLocalStorageValue('auth_basic_token');
+    return token && token !== 'undefined' ? token : undefined;
   }
 
   private getLocalStorageValue(key: string): string | null {
@@ -518,6 +675,45 @@ export class AdminSurveysPageComponent implements OnInit {
 
   private getSurveyId(survey: Survey): number | undefined {
     return survey.idEncuesta ?? survey.id_encuesta;
+  }
+
+  getSurveyStatusLabel(survey: Survey): string {
+    const status = this.normalizeText(survey.estado);
+
+    if (status === 'p' || status === 'publicada') {
+      return 'Publicada';
+    }
+
+    if (status === 'f' || status === 'finalizada') {
+      return 'Finalizada';
+    }
+
+    if (status === 'i' || status === 'inactiva') {
+      return 'Inactiva';
+    }
+
+    return 'Borrador';
+  }
+
+  isSurveyPublished(survey: Survey): boolean {
+    const status = this.normalizeText(survey.estado);
+    return status === 'p' || status === 'publicada';
+  }
+
+  private toRespondentOption(user: AuthUserAccount): RespondentOption | undefined {
+    const id = user.idEncuestado ?? user.id_encuestado ?? user.idUsuario ?? user.id_usuario;
+    if (!id) {
+      return undefined;
+    }
+
+    const email = user.correoElectronico ?? user.correo_electronico ?? user.correo ?? user.username;
+    const fullName = [user.nombres, user.apellidos].filter(Boolean).join(' ').trim();
+
+    return {
+      id,
+      label: fullName || email || `Encuestado ${id}`,
+      email
+    };
   }
 
   private getPersistedSurveyId(survey: SurveyDraft): number | undefined {

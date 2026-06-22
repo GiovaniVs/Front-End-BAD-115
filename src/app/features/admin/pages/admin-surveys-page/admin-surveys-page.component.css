@@ -76,7 +76,8 @@ h2 {
 }
 
 .survey-form input,
-.survey-form textarea {
+.survey-form textarea,
+.assignment-card select {
   width: 100%;
   border: 1px solid #bfdbfe;
   border-radius: 0.75rem;
@@ -87,9 +88,26 @@ h2 {
 }
 
 .survey-form input:focus,
-.survey-form textarea:focus {
+.survey-form textarea:focus,
+.assignment-card select:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+.assignment-card {
+  display: grid;
+  gap: 1rem;
+  border: 1px solid #dcfce7;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  background: #f0fdf4;
+}
+
+.assignment-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  align-items: start;
 }
 
 .error-text {
@@ -472,7 +490,8 @@ tbody tr:last-child td {
   }
 
   .question-top-row,
-  .question-actions-row {
+  .question-actions-row,
+  .assignment-row {
     align-items: stretch;
     grid-template-columns: 1fr;
   }

@@ -79,7 +79,7 @@
           @for (survey of surveys; track survey.idEncuesta || survey.id_encuesta || survey.titulo) {
             <tr>
               <td>{{ survey.titulo }}</td>
-              <td>{{ survey.estado || 'Borrador' }}</td>
+              <td>{{ getSurveyStatusLabel(survey) }}</td>
               <td>{{ survey.questions.length }}</td>
               <td>0</td>
               <td>{{ survey.fechaCreacion || survey.fecha_creacion || '-' }}</td>
@@ -130,6 +130,41 @@
         ></textarea>
 
         <button class="save-survey-button" type="submit">Aplicar cambios</button>
+      </form>
+
+      <form class="assignment-card" [formGroup]="assignmentForm" (ngSubmit)="assignSelectedSurvey()">
+        <div>
+          <p class="survey-kicker">Asignacion</p>
+          <h2>Asignar encuesta a encuestados</h2>
+          <p class="helper-text">Las encuestas guardadas apareceran como pendientes en el panel principal del encuestado.</p>
+        </div>
+
+        <div class="assignment-row">
+          <select formControlName="idEncuestados" multiple size="6" aria-label="Encuestados">
+            @for (respondent of respondents; track respondent.id) {
+              <option [ngValue]="respondent.id">{{ respondent.label }}{{ respondent.email ? ' - ' + respondent.email : '' }}</option>
+            }
+          </select>
+
+          <button class="save-survey-button" type="submit" [disabled]="isAssigningSurvey || isLoadingRespondents">
+            {{ isAssigningSurvey ? 'Asignando...' : 'Asignar encuesta' }}
+          </button>
+        </div>
+
+        <p class="helper-text">Mantén presionada la tecla Ctrl para seleccionar mas de un encuestado.</p>
+
+        @if (assignmentForm.controls.idEncuestados.touched && assignmentForm.controls.idEncuestados.invalid) {
+          <small class="error-text">Selecciona al menos un encuestado.</small>
+        }
+        @if (isLoadingRespondents) {
+          <p class="helper-text">Cargando encuestados...</p>
+        }
+        @if (assignmentError) {
+          <small class="error-text">{{ assignmentError }}</small>
+        }
+        @if (assignmentSuccess) {
+          <small class="success-text">{{ assignmentSuccess }}</small>
+        }
       </form>
 
       <form class="question-form google-form-card" [formGroup]="questionForm" (ngSubmit)="addQuestion()">
@@ -245,6 +280,9 @@
       }
       <button class="save-survey-button" type="button" [disabled]="isSavingSurvey || survey.saved" (click)="saveSelectedSurvey()">
         {{ survey.saved ? 'Encuesta guardada' : isSavingSurvey ? 'Guardando encuesta...' : 'Guardar cambios' }}
+      </button>
+      <button class="save-survey-button" type="button" [disabled]="isPublishingSurvey || !survey.saved || isSurveyPublished(survey)" (click)="publishSelectedSurvey()">
+        {{ isSurveyPublished(survey) ? 'Encuesta publicada' : isPublishingSurvey ? 'Publicando...' : 'Publicar encuesta' }}
       </button>
     </article>
   }

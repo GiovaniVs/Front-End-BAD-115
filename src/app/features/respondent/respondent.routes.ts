@@ -15,6 +15,13 @@ export const RESPONDENT_ROUTES: Routes = [
             (m) => m.RespondentHomePageComponent
           )
       },
+      {
+        path: 'responder/:token',
+        loadComponent: () =>
+          import('./pages/respondent-answer-page/respondent-answer-page.component').then(
+            (m) => m.RespondentAnswerPageComponent
+          )
+      },
       { path: '**', redirectTo: 'inicio' }
     ]
   }

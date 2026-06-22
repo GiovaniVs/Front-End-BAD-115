@@ -1,0 +1,73 @@
+<section class="answer-page">
+  <button class="back-button" type="button" (click)="goBack()">Volver al panel</button>
+
+  @if (isLoading) {
+    <article class="state-card">Cargando encuesta...</article>
+  }
+
+  @if (!isLoading && loadError) {
+    <article class="state-card error-state">{{ loadError }}</article>
+  }
+
+  @if (!isLoading && survey) {
+    <article class="survey-hero">
+      <p class="eyebrow">Responder encuesta</p>
+      <h1>{{ survey.titulo }}</h1>
+      @if (survey.objetivo) {
+        <p>{{ survey.objetivo }}</p>
+      }
+      @if (survey.instrucciones) {
+        <p class="instructions">{{ survey.instrucciones }}</p>
+      }
+    </article>
+
+    <form class="answer-form" (ngSubmit)="submitAnswers()">
+      @for (question of survey.preguntas; track question.idPregunta; let index = $index) {
+        <article class="question-card">
+          <div class="question-heading">
+            <span>{{ index + 1 }}</span>
+            <h2>{{ question.enunciado }}</h2>
+            @if (question.esObligatoria) {
+              <small>Obligatoria</small>
+            }
+          </div>
+
+          @if (isOptionQuestion(question)) {
+            <div class="options-list">
+              @for (option of question.opciones; track option.idOpcion || option.textoOpcion) {
+                <label>
+                  <input
+                    type="radio"
+                    [name]="'question-' + question.idPregunta"
+                    [value]="option.idOpcion"
+                    [(ngModel)]="answers[question.idPregunta].idOpcion"
+                    [ngModelOptions]="{ standalone: true }"
+                  />
+                  {{ option.textoOpcion }}
+                </label>
+              }
+            </div>
+          } @else {
+            <textarea
+              rows="4"
+              placeholder="Escribe tu respuesta"
+              [(ngModel)]="answers[question.idPregunta].textoRespuesta"
+              [ngModelOptions]="{ standalone: true }"
+            ></textarea>
+          }
+        </article>
+      }
+
+      @if (submitError) {
+        <small class="error-text">{{ submitError }}</small>
+      }
+      @if (submitSuccess) {
+        <small class="success-text">{{ submitSuccess }}</small>
+      }
+
+      <button class="submit-button" type="submit" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Enviando...' : 'Enviar respuestas' }}
+      </button>
+    </form>
+  }
+</section>
