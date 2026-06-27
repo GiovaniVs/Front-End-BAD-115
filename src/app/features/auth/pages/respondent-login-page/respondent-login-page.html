@@ -7,7 +7,7 @@
     <form class="auth-form" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
       <label for="resp-email">Correo</label>
       <input id="resp-email" formControlName="email" type="email" placeholder="Digita el correo electronico" />
-      @if (loginForm.controls.email.touched && loginForm.controls.email.invalid) {
+      @if (loginForm.controls.email.touched && (loginForm.controls.email.errors?.['required'] || loginForm.controls.email.errors?.['email'])) {
       <small class="error-text">Ingresa un correo valido.</small>
       }
       @if (loginForm.controls.email.errors?.['loginError']) {

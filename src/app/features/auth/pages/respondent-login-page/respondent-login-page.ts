@@ -32,14 +32,16 @@ export class RespondentLoginPageComponent {
       return;
     }
 
-    const { email, token } = this.loginForm.getRawValue();
+    const { token } = this.loginForm.getRawValue();
+    const email = this.loginForm.controls.email.value.trim();
+    this.loginForm.controls.email.setValue(email, { emitEvent: false });
     this.isLoading = true;
     this.message = '';
     this.loginError = '';
 
     if (!this.tokenSent) {
       this.authService.requestRespondentToken(email).pipe(
-        timeout(20000),
+        timeout(90000),
         finalize(() => this.isLoading = false)
       ).subscribe({
         next: (message) => {
@@ -80,19 +82,42 @@ export class RespondentLoginPageComponent {
 
   private getLoginErrorMessage(error: unknown): string {
     const status = (error as { status?: number })?.status;
+    const backendMessage = this.getBackendErrorMessage(error);
 
     if ((error as { name?: string })?.name === 'TimeoutError') {
-      return 'El servidor no termino de enviar el codigo. Revisa la configuracion SMTP/correo del backend en Railway.';
+      return 'El servidor tardo demasiado enviando el codigo. Intenta de nuevo en unos minutos.';
     }
 
     if (status === 0) {
       return 'No se pudo conectar con el backend. Revisa CORS o que la API este activa.';
     }
 
+    if (status === 404) {
+      return 'No existe un encuestado registrado con ese correo.';
+    }
+
+    if (backendMessage) {
+      return backendMessage;
+    }
+
     if (status && status >= 500) {
-      return 'El backend tuvo un error enviando el codigo. Revisa los logs de Railway.';
+      return 'El backend tuvo un error enviando el codigo. Revisa la configuracion SMTP/correo.';
     }
 
     return 'No se pudo enviar el codigo. Verifica el correo.';
+  }
+
+  private getBackendErrorMessage(error: unknown): string {
+    const responseError = (error as { error?: unknown })?.error;
+    if (typeof responseError === 'string') {
+      return responseError;
+    }
+
+    if (responseError && typeof responseError === 'object') {
+      const message = (responseError as { message?: unknown; error?: unknown })?.message ?? (responseError as { error?: unknown })?.error;
+      return typeof message === 'string' ? message : '';
+    }
+
+    return '';
   }
 }
